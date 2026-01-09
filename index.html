@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MarCom Dashboard Pro v12.16 (Mobile & Fixes)</title>
+    <title>MarCom Dashboard Pro v12.17 (Mobile & Sticky Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -29,20 +29,65 @@
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         
-        /* Sticky Columns Logic */
-        th.sticky-col-0, th.sticky-col-1, th.sticky-col-2, th.sticky-col-3, th.sticky-col-4 { background-color: #f8fafc; z-index: 40 !important; }
-        td.sticky-col-0, td.sticky-col-1, td.sticky-col-2, td.sticky-col-3, td.sticky-col-4 { background-color: white; z-index: 30 !important; }
+        /* --- STICKY HEADER FIX (V12.17) --- */
+        
+        /* 1. Mặc định tất cả Header đều dính lên trên cùng */
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 40; /* Cao hơn nội dung bảng (z-index: 0-30) */
+            background-color: #f8fafc;
+            box-shadow: 0 1px 0px #e2e8f0; 
+        }
+
+        /* 2. Các cột dính bên trái (Sticky Left) */
+        /* Cần z-index cao hơn body cells nhưng thấp hơn giao điểm góc trái trên */
+        .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 {
+            position: sticky;
+            z-index: 30; /* Đè lên nội dung thường khi cuộn ngang */
+            background-color: white;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        /* 3. Giao điểm (Góc trái trên cùng) - Header của các cột dính */
+        /* Phải có z-index cao nhất để không bị cái gì đè lên khi cuộn cả 2 chiều */
+        thead th.sticky-col-0, 
+        thead th.sticky-col-1, 
+        thead th.sticky-col-2, 
+        thead th.sticky-col-3, 
+        thead th.sticky-col-4 {
+            z-index: 50 !important; 
+            background-color: #f8fafc;
+        }
+
+        /* Tinh chỉnh vị trí cột trái */
+        .sticky-col-0 { left: 0; }
+        .sticky-col-1 { left: var(--col-width-check, 40px); }
+        .sticky-col-2 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px)); }
+        .sticky-col-3 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px)); }
+        .sticky-col-4 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px) + var(--col-width-task, 250px)); border-right: 2px solid #94a3b8; }
+
+        /* Row Hover Effect cho cột dính */
         tr:hover td.sticky-col-0, tr:hover td.sticky-col-1, tr:hover td.sticky-col-2, tr:hover td.sticky-col-3, tr:hover td.sticky-col-4 { background-color: #f8fafc; }
         tr.bg-indigo-50 td.sticky-col-0, tr.bg-indigo-50 td.sticky-col-1, tr.bg-indigo-50 td.sticky-col-2, tr.bg-indigo-50 td.sticky-col-3, tr.bg-indigo-50 td.sticky-col-4 { background-color: #eef2ff; }
 
-        .sticky-col-0 { position: sticky; left: 0; border-right: 1px solid #e2e8f0; }
-        .sticky-col-1 { position: sticky; left: var(--col-width-check, 40px); border-right: 1px solid #e2e8f0; }
-        .sticky-col-2 { position: sticky; left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px)); border-right: 1px solid #e2e8f0; }
-        .sticky-col-3 { position: sticky; left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px)); border-right: 1px solid #e2e8f0; }
-        .sticky-col-4 { position: sticky; left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px) + var(--col-width-task, 250px)); border-right: 2px solid #94a3b8; }
+        /* --- MOBILE OPTIMIZATION (V12.17) --- */
+        @media (max-width: 1024px) {
+            /* Tắt dính cột trái trên mobile để bảng thoáng hơn, chỉ giữ dính Header */
+            .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 { 
+                position: static !important; 
+                border-right: none !important; 
+                box-shadow: none !important;
+            }
+            /* Giữ cột checkbox nhỏ gọn */
+            th.sticky-col-0, td.sticky-col-0 { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
+            
+            /* Header vẫn dính lên top */
+            thead th { position: sticky; top: 0; z-index: 40; }
+        }
 
         .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 10px; cursor: col-resize; z-index: 50; touch-action: none; opacity: 0; }
         .resizer:hover { background: #6366f1; opacity: 0.3; }
@@ -50,21 +95,13 @@
         .animate-in { animation-duration: 0.3s; animation-fill-mode: both; }
         .fade-in { animation-name: fadeIn; }
         .zoom-in { animation-name: zoomIn; }
-        .slide-in-left { animation-name: slideInLeft; }
-
+        
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         
-        /* Smooth Transitions */
+        /* Sidebar Transition: Translate -100% để ẩn hoàn toàn logo */
         .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .main-transition { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        
-        /* Mobile Optimization */
-        @media (max-width: 1024px) {
-            .sticky-col-2, .sticky-col-3, .sticky-col-4 { position: static !important; border-right: none !important; }
-            .sticky-col-0, .sticky-col-1 { position: sticky !important; z-index: 40; }
-        }
     </style>
 </head>
 <body class="bg-[#F1F5F9] text-slate-800 h-screen overflow-hidden">
@@ -75,9 +112,9 @@
         import ReactDOM from 'react-dom';
         import { createRoot } from 'react-dom/client';
         import { initializeApp } from 'firebase/app';
-        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
+        import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, Menu, ChevronLeft, Calendar, Filter, Building2, LogOut } from 'lucide-react';
+        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Filter, Building2, LogOut } from 'lucide-react';
         import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
         // --- CONFIG ---
@@ -134,19 +171,20 @@
         // --- COMPONENTS ---
         const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
+            const containerRef = useRef(null);
             const handleToggle = (option) => onChange(selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]);
             return (
                 <div className="w-full">
-                    <div onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
+                    <div ref={containerRef} onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
                         <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
-                    {isOpen && ReactDOM.createPortal(<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setIsOpen(false)}><div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in" onClick={e => e.stopPropagation()}><div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 className="text-lg font-black text-slate-800 uppercase">Phân loại</h3><button onClick={() => setIsOpen(false)}><X size={20}/></button></div><div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto">{options.map(o => (<div key={o} onClick={() => handleToggle(o)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer ${selected.includes(o) ? 'border-indigo-600 bg-indigo-50 font-bold' : 'border-slate-100'}`}><div className={`w-5 h-5 rounded border flex items-center justify-center ${selected.includes(o) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>{selected.includes(o) && <Check size={14} className="text-white"/>}</div><span className="text-xs">{o}</span></div>))}</div><div className="mt-6 pt-4 border-t flex justify-end"><button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold">Xong</button></div></div></div>, document.body)}
+                    {isOpen && ReactDOM.createPortal(<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setIsOpen(false)}><div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in" onClick={e => e.stopPropagation()}><div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 className="text-lg font-black text-slate-800 uppercase">Phân loại</h3><button onClick={() => setIsOpen(false)}><X size={20}/></button></div><div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto custom-scrollbar p-1">{options.map(o => (<div key={o} onClick={() => handleToggle(o)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer ${selected.includes(o) ? 'border-indigo-600 bg-indigo-50 font-bold' : 'border-slate-100'}`}><div className={`w-5 h-5 rounded border flex items-center justify-center ${selected.includes(o) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>{selected.includes(o) && <Check size={14} className="text-white"/>}</div><span className="text-xs">{o}</span></div>))}</div><div className="mt-6 pt-4 border-t flex justify-end"><button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold">Xong ({selected.length})</button></div></div></div>, document.body)}
                 </div>
             );
         };
 
         const Toast = ({ message, onUndo, onClose }) => (
-            <div className="fixed bottom-6 right-6 left-6 md:left-auto z-[10000] bg-slate-900 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom">
+            <div className="fixed bottom-6 right-6 left-6 md:left-auto z-[10000] bg-slate-900 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-in fade-in">
                 <div className="flex flex-col flex-1"><span className="font-bold text-sm">Thông báo</span><span className="text-xs text-slate-300">{message}</span></div>
                 {onUndo && <button onClick={onUndo} className="px-3 py-1.5 bg-indigo-600 rounded-lg text-xs font-bold flex items-center gap-1"><Undo2 size={14}/> Hoàn tác</button>}
                 <button onClick={onClose}><X size={16}/></button>
@@ -160,7 +198,7 @@
             return (
                 <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in zoom-in" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2"><Database size={24} className="text-indigo-600"/> Tạo dữ liệu mẫu</h3>
+                        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2"><Database size={24} className="text-indigo-600"/> Dữ liệu mẫu</h3>
                         <div className="space-y-6"><div><label className="text-sm font-bold text-slate-600 mb-2 block">Số lượng: <span className="text-indigo-600">{quantity}</span></label><input type="range" min="1" max="50" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-indigo-600"/></div><div><label className="text-sm font-bold text-slate-600 mb-2 block">Kịch bản</label><select className="w-full p-3 border rounded-xl text-sm outline-none" value={scenario} onChange={e => setScenario(e.target.value)}><option value="random">Ngẫu nhiên</option><option value="event">Mùa sự kiện</option><option value="admission">Tuyển sinh</option><option value="internal">Nội bộ</option></select></div></div>
                         <div className="mt-8 flex gap-3"><button onClick={onClose} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold">Hủy</button><button onClick={() => { onGenerate(quantity, scenario); onClose(); }} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold">Tạo ngay</button></div>
                     </div>
@@ -191,6 +229,8 @@
             const [lastSelectedId, setLastSelectedId] = useState(null);
             const [toast, setToast] = useState(null);
             const deletedDataRef = useRef([]);
+            
+            // Sidebar logic
             const [sidebarOpen, setSidebarOpen] = useState(true);
             const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
@@ -251,7 +291,7 @@
 
             const chartDataOverall = useMemo(() => { const counts = {}; OVERALL_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t.overallStatus || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); }, [filteredTasks]);
             const teamVolumeData = useMemo(() => [{ name: 'Brand', value: filteredTasks.filter(t => t.brandTask?.status !== 'Không có task').length }, { name: 'Operation', value: filteredTasks.filter(t => t.operationTask?.status !== 'Không có task').length }, { name: 'Media', value: filteredTasks.filter(t => t.mediaTask?.status !== 'Không có task').length }], [filteredTasks]);
-            const teamStats = (teamKey) => { const counts = {}; TASK_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); };
+            const teamStats = (teamKey) => { const counts = {}; TASK_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); }, [filteredTasks]);
             const teamUrgent = (teamKey) => { const today = new Date(); const limit = new Date(); limit.setDate(today.getDate() + 3); return filteredTasks.filter(t => { const dStr = t[`${teamKey}Task`]?.deadline; if (!dStr) return false; const deadlineDate = new Date(dStr); return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không có task'; }); };
             const chartDataCategory = useMemo(() => { const data = CATEGORIES.map(cat => ({ name: cat, completed: 0, pending: 0 })); filteredTasks.forEach(t => { const isCompleted = t.overallStatus === "Hoàn thành"; t.categories.forEach(cat => { const idx = data.findIndex(d => d.name === cat); if (idx !== -1) { if (isCompleted) data[idx].completed++; else data[idx].pending++; } }); }); return data; }, [filteredTasks]);
 
@@ -275,9 +315,9 @@
                     {isMobile && sidebarOpen && (
                         <div className="fixed inset-0 bg-black/50 z-[90] animate-in fade-in" onClick={() => setSidebarOpen(false)}></div>
                     )}
-                    <aside className={`sidebar-transition fixed inset-y-0 left-0 z-[100] text-white shadow-2xl bg-[#0F172A] w-64 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isMobile ? '' : 'lg:translate-x-0 lg:w-64'}`}>
-                        <div className="p-8 border-b border-slate-800 flex items-center justify-between">
-                            <div className="flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.16</span></h1></div>
+                    <aside className={`sidebar-transition fixed inset-y-0 left-0 z-[100] text-white shadow-2xl bg-[#0F172A] w-64 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                        <div className="p-8 border-b border-slate-800 flex items-center justify-between overflow-hidden">
+                            <div className="flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.17</span></h1></div>
                             {isMobile && <button onClick={() => setSidebarOpen(false)} className="text-slate-400"><X size={24}/></button>}
                         </div>
                         <nav className="p-4 flex-1 space-y-1">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => { setActiveTab(tab.id); if(isMobile) setSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
@@ -285,7 +325,7 @@
                     </aside>
 
                     {/* MAIN CONTENT */}
-                    <main className={`main-transition flex-1 p-4 lg:p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F1F5F9] ${sidebarOpen && !isMobile ? 'lg:ml-64' : 'ml-0'}`}>
+                    <main className={`main-transition flex-1 p-4 lg:p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F1F5F9] ${sidebarOpen && !isMobile ? 'ml-64' : 'ml-0'}`}>
                         <div className="flex-none flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 sticky top-0 bg-[#F1F5F9] z-[30] pb-2">
                             <div className="flex items-center gap-4">
                                 <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-indigo-600 border border-slate-200 transition-all">
