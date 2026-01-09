@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12</title>
+    <title>MarCom Dashboard Pro v12.2 (Fixed)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -15,6 +15,20 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
+        "lucide-react": "https://esm.sh/lucide-react@0.330.0",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
+      }
+    }
+    </script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         
@@ -23,21 +37,19 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         
-        /* Cấu hình cột cố định (Sticky Columns) */
+        /* Sticky Columns */
         .sticky-col-0 { position: sticky; left: 0; z-index: 45; background: white; border-right: 1px solid #e2e8f0; }
         .sticky-col-1 { position: sticky; left: var(--col-width-actions, 80px); z-index: 45; background: white; border-right: 1px solid #e2e8f0; }
         .sticky-col-2 { position: sticky; left: calc(var(--col-width-actions, 80px) + var(--col-width-admin, 140px)); z-index: 45; background: white; border-right: 1px solid #e2e8f0; }
         .sticky-col-3 { position: sticky; left: calc(var(--col-width-actions, 80px) + var(--col-width-admin, 140px) + var(--col-width-task, 280px)); z-index: 45; background: white; border-right: 3px solid #cbd5e1; }
         
-        /* Thanh kéo giãn kích thước cột */
+        /* Resizer */
         .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 80; touch-action: none; }
         .resizer:hover { background: #6366f1; opacity: 0.3; }
         
-        /* Quản lý Tab */
+        /* Tabs & Animation */
         .tab-content { display: none; height: 100%; width: 100%; }
         .tab-content.active { display: flex; flex-direction: column; }
-
-        /* Hiệu ứng Animation */
         .animate-in { animation-duration: 0.5s; animation-fill-mode: both; }
         .fade-in { animation-name: fadeIn; }
         .slide-in-from-bottom { animation-name: slideInFromBottom; }
@@ -52,34 +64,33 @@
     <div id="root" class="h-full"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'https://esm.sh/react@18.2.0';
-        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        // Import từ Import Map thay vì URL trực tiếp
+        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+        import { createRoot } from 'react-dom/client';
         
-        // Firebase Imports (Modular SDK từ Google CDN - ĐÚNG)
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        // Firebase
+        import { initializeApp } from 'firebase/app';
         import { 
             getFirestore, collection, addDoc, onSnapshot, updateDoc, 
             doc, query, serverTimestamp, deleteDoc 
-        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        } from 'firebase/firestore';
         import { 
-            getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken 
-        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+            getAuth, signInAnonymously, onAuthStateChanged 
+        } from 'firebase/auth';
 
-        // Các Icon từ Lucide React
+        // Icons
         import { 
             LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, 
             Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, 
             Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw 
-        } from 'https://esm.sh/lucide-react@0.330.0';
+        } from 'lucide-react';
 
-        // Biểu đồ từ Recharts
+        // Charts (Đã được fix lỗi useRef nhờ Import Map)
         import { 
             BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell 
-        } from 'https://esm.sh/recharts@2.12.0';
+        } from 'recharts';
 
-        // --- CẤU HÌNH HỆ THỐNG ---
-        
-        // 1. Cấu hình Firebase (Đã cập nhật thông tin chính xác của bạn)
+        // --- CẤU HÌNH ---
         const firebaseConfig = {
             apiKey: "AIzaSyDNdBlMZL42nkWc7W1OtgkWvkxKCwxKCjQ",
             authDomain: "marcom-dashboard-test.firebaseapp.com",
@@ -89,12 +100,10 @@
             appId: "1:840436404750:web:783b44fa370f94b4dba25f"
         };
 
-        const appId = 'marcom-hub-pro-v12'; // Định danh ứng dụng
-        
-        // 2. Cấu hình Gemini API
-        const apiKey = ""; 
+        const appId = 'marcom-hub-pro-v12';
+        const apiKey = ""; // Gemini API Key
 
-        // --- KHỞI TẠO KẾT NỐI FIREBASE ---
+        // --- KHỞI TẠO FIREBASE ---
         let app, auth, db;
         try {
             if (firebaseConfig.apiKey) {
@@ -108,12 +117,11 @@
             console.error("Lỗi khởi tạo Firebase:", e);
         }
 
-        // --- HÀM GỌI GEMINI API ---
-        const GEMINI_MODEL = "gemini-2.0-flash-exp"; // Update model mới hơn cho nhanh
+        const GEMINI_MODEL = "gemini-2.0-flash-exp";
 
         async function callGemini(payload) {
             if (!apiKey) {
-                alert("Vui lòng cấu hình Gemini API Key trong code để sử dụng tính năng này.");
+                alert("Vui lòng cấu hình Gemini API Key.");
                 return { candidates: [] };
             }
             try {
@@ -129,7 +137,7 @@
             }
         }
 
-        // --- HẰNG SỐ DỮ LIỆU ---
+        // --- DATA CONSTANTS ---
         const DEPARTMENTS = [
             "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", 
             "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", 
@@ -158,9 +166,8 @@
             return map[color] || 'bg-slate-50 text-slate-600';
         };
 
-        // --- CÁC COMPONENT PHỤ ---
+        // --- COMPONENTS ---
         
-        // Component chọn nhiều mục (MultiSelect)
         const MultiSelect = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
@@ -193,7 +200,6 @@
             );
         };
 
-        // Modal xác nhận xóa
         const DeleteModal = ({ isOpen, onConfirm, onCancel, taskName }) => {
             if (!isOpen) return null;
             return (
@@ -208,17 +214,15 @@
             );
         };
 
-        // --- ỨNG DỤNG CHÍNH (MAIN APP) ---
+        // --- MAIN APP ---
         function App() {
             const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('dashboard');
             const [tasks, setTasks] = useState([]);
-            const [isXlsxLoaded, setIsXlsxLoaded] = useState(true);
             const [deleteModal, setDeleteModal] = useState({ open: false, taskId: null, taskName: '' });
             const [isAiLoading, setIsAiLoading] = useState(false);
             const [aiAnalysis, setAiAnalysis] = useState("");
             
-            // State cho độ rộng cột và bộ lọc
             const [colWidths, setColWidths] = useState({ actions: 80, admin: 140, task: 280, overall: 160, unit: 180, brand: 450, operation: 450, media: 450 });
             const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
             const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
@@ -226,21 +230,17 @@
             const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
             const [formData, setFormData] = useState(emptyFormData);
 
-            // 1. Xác thực người dùng (Auth)
+            // Auth
             useEffect(() => {
                 if (!auth) return;
                 const initAuth = async () => { 
-                    try { 
-                        await signInAnonymously(auth); // Đăng nhập ẩn danh để truy cập Firestore
-                    } catch(e) { 
-                        console.error("Auth Error", e); 
-                    } 
+                    try { await signInAnonymously(auth); } catch(e) { console.error("Auth Error", e); } 
                 };
                 initAuth();
                 return onAuthStateChanged(auth, setUser);
             }, []);
 
-            // 2. Lắng nghe dữ liệu thời gian thực (Firestore Realtime Updates)
+            // Data Sync
             useEffect(() => {
                 if (!user || !db) return;
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks');
@@ -251,8 +251,7 @@
                 return () => unsubscribe();
             }, [user]);
 
-            // --- CÁC HÀM XỬ LÝ (HANDLERS) ---
-            
+            // Handlers
             const handleAddTask = async (e) => {
                 e.preventDefault();
                 if(!db) return alert("Chưa kết nối Database!");
@@ -263,18 +262,14 @@
                 } catch (e) { console.error(e); }
             };
 
-            // OPTIMIZED: Debounce Update (Giảm tải request ghi đè liên tục)
             const debouncedUpdate = useCallback(_.debounce(async (id, data) => {
                  if(!db) return;
-                 try {
-                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data);
-                 } catch (e) { console.error("Update Error:", e); }
+                 try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } 
+                 catch (e) { console.error("Update Error:", e); }
             }, 800), []);
 
             const handleUpdateTask = (id, updatedData) => { 
-                // Cập nhật UI ngay lập tức
                 setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t));
-                // Gọi debounce để lưu xuống DB sau khi ngừng gõ
                 debouncedUpdate(id, updatedData);
             };
 
@@ -360,7 +355,6 @@
                 } catch (e) { console.error(e); } finally { setIsAiLoading(false); }
             };
 
-            // Tính toán dữ liệu (Memoization)
             const filteredTasks = useMemo(() => tasks.filter(t => {
                 const dateG = (!globalFilters.dateStart || t.orderDate >= globalFilters.dateStart) && (!globalFilters.dateEnd || t.orderDate <= globalFilters.dateEnd);
                 const unitG = !globalFilters.unit || t.unit === globalFilters.unit;
@@ -375,43 +369,35 @@
             const teamStats = (teamKey) => { const counts = {}; TASK_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); };
             const teamUrgent = (teamKey) => { const today = new Date(); const limit = new Date(); limit.setDate(today.getDate() + 3); return filteredTasks.filter(t => { const dStr = t[`${teamKey}Task`]?.deadline; if (!dStr) return false; const deadlineDate = new Date(dStr); return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không'; }); };
 
-            // Cập nhật biến CSS cho cột dính (Sticky Columns)
             useEffect(() => {
                 document.documentElement.style.setProperty('--col-width-actions', `${colWidths.actions}px`);
                 document.documentElement.style.setProperty('--col-width-admin', `${colWidths.admin}px`);
                 document.documentElement.style.setProperty('--col-width-task', `${colWidths.task}px`);
             }, [colWidths]);
 
-            // Màn hình chờ khi chưa có DB
-            if (!db) {
-                return (
-                    <div className="h-screen flex items-center justify-center bg-slate-50 p-6">
-                        <div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg">
-                            <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4"><Database size={32}/></div>
-                            <h2 className="text-2xl font-black text-slate-900 mb-2">Chưa kết nối Firebase</h2>
-                            <p className="text-slate-500 mb-6">Vui lòng kiểm tra lại cấu hình Firebase trong code.</p>
-                            <a href="https://console.firebase.google.com/" target="_blank" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">Đến Firebase Console</a>
-                        </div>
+            if (!db) return (
+                <div className="h-screen flex items-center justify-center bg-slate-50 p-6">
+                    <div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg">
+                        <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4"><Database size={32}/></div>
+                        <h2 className="text-2xl font-black text-slate-900 mb-2">Chưa kết nối Firebase</h2>
+                        <p className="text-slate-500 mb-6">Vui lòng kiểm tra lại cấu hình Firebase.</p>
+                        <a href="https://console.firebase.google.com/" target="_blank" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">Đến Firebase Console</a>
                     </div>
-                );
-            }
+                </div>
+            );
 
             return (
                 <div className="flex font-sans h-full">
-                    {/* Loading AI Overlay */}
                     {isAiLoading && (<div className="fixed inset-0 z-[20000] bg-white/60 backdrop-blur-sm flex items-center justify-center flex-col gap-4"><div className="animate-spin text-indigo-600"><RefreshCw size={48}/></div><p className="font-black text-indigo-950 uppercase tracking-widest text-sm animate-pulse">✨ Trí tuệ nhân tạo đang xử lý...</p></div>)}
                     
-                    {/* Modal Xóa */}
                     <DeleteModal isOpen={deleteModal.open} taskName={deleteModal.taskName} onCancel={() => setDeleteModal({ open: false, taskId: null, taskName: '' })} onConfirm={confirmDelete} />
                     
-                    {/* Sidebar */}
                     <aside className="w-64 bg-[#0F172A] fixed h-full flex flex-col z-[100] text-white shadow-2xl">
                         <div className="p-8 border-b border-slate-800 flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18}/> {tab.label}</button>))}</nav>
                         <div className="p-4 border-t border-slate-800"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu mẫu</button></div>
                     </aside>
 
-                    {/* Main Content Area */}
                     <main className="ml-64 flex-1 p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F8FAFC]">
                         {/* DASHBOARD TAB */}
                         <div className={`tab-content ${activeTab === 'dashboard' ? 'active' : ''}`}>
