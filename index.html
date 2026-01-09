@@ -1,663 +1,472 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MarCom Dashboard Pro v12.20 (Team Charts)</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WZMXWHSJE"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-5WZMXWHSJE');
-    </script>
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom": "https://esm.sh/react-dom@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
-        "lucide-react": "https://esm.sh/lucide-react@0.330.0",
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
-      }
-    }
-    </script>
-    <style>
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-        
-        /* Sticky Columns Logic */
-        thead th {
-            position: sticky;
-            top: 0;
-            z-index: 40; 
-            background-color: #f8fafc;
-            box-shadow: 0 1px 0px #e2e8f0; 
-        }
-        .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 {
-            position: sticky;
-            z-index: 30; 
-            background-color: white;
-            border-right: 1px solid #e2e8f0;
-        }
-        thead th.sticky-col-0, 
-        thead th.sticky-col-1, 
-        thead th.sticky-col-2, 
-        thead th.sticky-col-3, 
-        thead th.sticky-col-4 {
-            z-index: 50 !important; 
-            background-color: #f8fafc;
-        }
-        .sticky-col-0 { left: 0; }
-        .sticky-col-1 { left: var(--col-width-check, 40px); }
-        .sticky-col-2 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px)); }
-        .sticky-col-3 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px)); }
-        .sticky-col-4 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px) + var(--col-width-task, 250px)); border-right: 2px solid #94a3b8; }
-        tr:hover td.sticky-col-0, tr:hover td.sticky-col-1, tr:hover td.sticky-col-2, tr:hover td.sticky-col-3, tr:hover td.sticky-col-4 { background-color: #f8fafc; }
-        tr.bg-indigo-50 td.sticky-col-0, tr.bg-indigo-50 td.sticky-col-1, tr.bg-indigo-50 td.sticky-col-2, tr.bg-indigo-50 td.sticky-col-3, tr.bg-indigo-50 td.sticky-col-4 { background-color: #eef2ff; }
-        
-        /* Mobile Optimization */
-        @media (max-width: 1024px) {
-            .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 { 
-                position: static !important; 
-                border-right: none !important; 
-                box-shadow: none !important;
-            }
-            th.sticky-col-0, td.sticky-col-0 { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
-            thead th { position: sticky; top: 0; z-index: 40; }
-        }
-        .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 10px; cursor: col-resize; z-index: 50; touch-action: none; opacity: 0; }
-        .resizer:hover { background: #6366f1; opacity: 0.3; }
-        
-        .animate-in { animation-duration: 0.3s; animation-fill-mode: both; }
-        .fade-in { animation-name: fadeIn; }
-        .zoom-in { animation-name: zoomIn; }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .main-transition { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MarCom Dashboard Pro v12.20 (Team Charts)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WZMXWHSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-5WZMXWHSJE');
+    </script>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
+        "lucide-react": "https://esm.sh/lucide-react@0.330.0",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
+      }
+    }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        
+        /* Sticky Columns Logic */
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 40; 
+            background-color: #f8fafc;
+            box-shadow: 0 1px 0px #e2e8f0; 
+        }
+
+        .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 {
+            position: sticky;
+            z-index: 30; 
+            background-color: white;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        thead th.sticky-col-0, 
+        thead th.sticky-col-1, 
+        thead th.sticky-col-2, 
+        thead th.sticky-col-3, 
+        thead th.sticky-col-4 {
+            z-index: 50 !important; 
+            background-color: #f8fafc;
+        }
+
+        .sticky-col-0 { left: 0; }
+        .sticky-col-1 { left: var(--col-width-check, 40px); }
+        .sticky-col-2 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px)); }
+        .sticky-col-3 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px)); }
+        .sticky-col-4 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px) + var(--col-width-task, 250px)); border-right: 2px solid #94a3b8; }
+
+        tr:hover td.sticky-col-0, tr:hover td.sticky-col-1, tr:hover td.sticky-col-2, tr:hover td.sticky-col-3, tr:hover td.sticky-col-4 { background-color: #f8fafc; }
+        tr.bg-indigo-50 td.sticky-col-0, tr.bg-indigo-50 td.sticky-col-1, tr.bg-indigo-50 td.sticky-col-2, tr.bg-indigo-50 td.sticky-col-3, tr.bg-indigo-50 td.sticky-col-4 { background-color: #eef2ff; }
+
+        /* Mobile Optimization */
+        @media (max-width: 1024px) {
+            .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 { 
+                position: static !important; 
+                border-right: none !important; 
+                box-shadow: none !important;
+            }
+            th.sticky-col-0, td.sticky-col-0 { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
+            thead th { position: sticky; top: 0; z-index: 40; }
+        }
+
+        .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 10px; cursor: col-resize; z-index: 50; touch-action: none; opacity: 0; }
+        .resizer:hover { background: #6366f1; opacity: 0.3; }
+        
+        .animate-in { animation-duration: 0.3s; animation-fill-mode: both; }
+        .fade-in { animation-name: fadeIn; }
+        .zoom-in { animation-name: zoomIn; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .main-transition { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
 </head>
 <body class="bg-[#F1F5F9] text-slate-800 h-screen overflow-hidden">
-    <div id="root" class="h-full"></div>
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-        import ReactDOM from 'react-dom';
-        import { createRoot } from 'react-dom/client';
-        import { initializeApp } from 'firebase/app';
-        import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Filter, Building2, LogOut } from 'lucide-react';
-        import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, PieChart, Pie } from 'recharts';
-        
-        // --- CONFIG ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDNdBlMZL42nkWc7W1OtgkWvkxKCwxKCjQ",
-            authDomain: "marcom-dashboard-test.firebaseapp.com",
-            projectId: "marcom-dashboard-test",
-            storageBucket: "marcom-dashboard-test.firebasestorage.app",
-            messagingSenderId: "840436404750",
-            appId: "1:840436404750:web:783b44fa370f94b4dba25f"
-        };
-        const appId = 'marcom-hub-pro-v12';
-        const apiKey = ""; 
-        let app, auth, db;
-        try {
-            if (firebaseConfig.apiKey) {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-            }
-        } catch (e) { console.error("Firebase Init Error:", e); }
-        const GEMINI_MODEL = "gemini-2.0-flash-exp";
+    <div id="root" class="h-full"></div>
 
-        // --- HELPER ---
-        const processExcelDate = (input) => {
-            if (!input) return "";
-            if (typeof input === 'number') {
-                const date = new Date(Date.UTC(1899, 11, 30)); 
-                date.setDate(date.getDate() + input);
-                return date.toISOString().split('T')[0];
-            }
-            if (typeof input === 'string' && input.includes('/')) {
-                const parts = input.split('/');
-                if (parts.length === 3) {
-                    const day = parts[0].padStart(2, '0');
-                    const month = parts[1].padStart(2, '0');
-                    const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-                    return `${year}-${month}-${day}`;
-                }
-            }
-            return input;
-        };
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+        import ReactDOM from 'react-dom';
+        import { createRoot } from 'react-dom/client';
+        import { initializeApp } from 'firebase/app';
+        import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Filter, Building2, LogOut } from 'lucide-react';
+        import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, PieChart, Pie } from 'recharts';
 
-        const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
-        const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
-        const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
-        const OVERALL_STATUS = ["Chờ duyệt", "Gấp", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
-        const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
-        
-        const STATUS_COLOR_MAP = { 
-            "Chờ duyệt": "#a855f7",
-            "Gấp": "#ef4444",
-            "Chưa bắt đầu": "#94a3b8", 
-            "Đang xử lý": "#6366f1", 
-            "Hoàn thành": "#10b981", 
-            "Không có task": "#cbd5e1",
-            "Không": "#cbd5e1"
-        };
-        const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
+        // --- CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDNdBlMZL42nkWc7W1OtgkWvkxKCwxKCjQ",
+            authDomain: "marcom-dashboard-test.firebaseapp.com",
+            projectId: "marcom-dashboard-test",
+            storageBucket: "marcom-dashboard-test.firebasestorage.app",
+            messagingSenderId: "840436404750",
+            appId: "1:840436404750:web:783b44fa370f94b4dba25f"
+        };
+        const appId = 'marcom-hub-pro-v12';
+        const apiKey = ""; 
 
-        // --- COMPONENTS ---
-        const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
-            const [isOpen, setIsOpen] = useState(false);
-            const containerRef = useRef(null);
-            const handleToggle = (option) => onChange(selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]);
-            return (
-                <div className="w-full">
-                    <div ref={containerRef} onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
-                        <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
-                    </div>
-                    {isOpen && ReactDOM.createPortal(<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setIsOpen(false)}><div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in" onClick={e => e.stopPropagation()}><div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 className="text-lg font-black text-slate-800 uppercase">Phân loại</h3><button onClick={() => setIsOpen(false)}><X size={20}/></button></div><div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto custom-scrollbar p-1">{options.map(o => (<div key={o} onClick={() => handleToggle(o)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer ${selected.includes(o) ? 'border-indigo-600 bg-indigo-50 font-bold' : 'border-slate-100'}`}><div className={`w-5 h-5 rounded border flex items-center justify-center ${selected.includes(o) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>{selected.includes(o) && <Check size={14} className="text-white"/>}</div><span className="text-xs">{o}</span></div>))}</div><div className="mt-6 pt-4 border-t flex justify-end"><button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold">Xong ({selected.length})</button></div></div></div>, document.body)}
-                </div>
-            );
-        };
+        let app, auth, db;
+        try {
+            if (firebaseConfig.apiKey) {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            }
+        } catch (e) { console.error("Firebase Init Error:", e); }
 
-        const Toast = ({ message, onUndo, onClose }) => (
-            <div className="fixed bottom-6 right-6 left-6 md:left-auto z-[10000] bg-slate-900 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-in fade-in">
-                <div className="flex flex-col flex-1"><span className="font-bold text-sm">Thông báo</span><span className="text-xs text-slate-300">{message}</span></div>
-                {onUndo && <button onClick={onUndo} className="px-3 py-1.5 bg-indigo-600 rounded-lg text-xs font-bold flex items-center gap-1"><Undo2 size={14}/> Hoàn tác</button>}
-                <button onClick={onClose}><X size={16}/></button>
-            </div>
-        );
+        const GEMINI_MODEL = "gemini-2.0-flash-exp";
 
-        const MockDataModal = ({ isOpen, onClose, onGenerate }) => {
-            const [quantity, setQuantity] = useState(10);
-            const [scenario, setScenario] = useState('random');
-            if (!isOpen) return null;
-            return (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in zoom-in" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2"><Database size={24} className="text-indigo-600"/> Dữ liệu mẫu</h3>
-                        <div className="space-y-6"><div><label className="text-sm font-bold text-slate-600 mb-2 block">Số lượng: <span className="text-indigo-600">{quantity}</span></label><input type="range" min="1" max="50" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-indigo-600"/></div><div><label className="text-sm font-bold text-slate-600 mb-2 block">Kịch bản</label><select className="w-full p-3 border rounded-xl text-sm outline-none" value={scenario} onChange={e => setScenario(e.target.value)}><option value="random">Ngẫu nhiên</option><option value="event">Mùa sự kiện</option><option value="admission">Tuyển sinh</option><option value="internal">Nội bộ</option></select></div></div>
-                        <div className="mt-8 flex gap-3"><button onClick={onClose} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold">Hủy</button><button onClick={() => { onGenerate(quantity, scenario); onClose(); }} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold">Tạo ngay</button></div>
-                    </div>
-                </div>
-            );
-        };
+        // --- HELPER ---
+        const processExcelDate = (input) => {
+            if (!input) return "";
+            if (typeof input === 'number') {
+                const date = new Date(Date.UTC(1899, 11, 30)); 
+                date.setDate(date.getDate() + input);
+                return date.toISOString().split('T')[0];
+            }
+            if (typeof input === 'string' && input.includes('/')) {
+                const parts = input.split('/');
+                if (parts.length === 3) {
+                    const day = parts[0].padStart(2, '0');
+                    const month = parts[1].padStart(2, '0');
+                    const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                    return `${year}-${month}-${day}`;
+                }
+            }
+            return input;
+        };
 
-        const DeleteModal = ({ isOpen, onConfirm, onCancel, count }) => {
-            if (!isOpen) return null;
-            return (<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={onCancel}><div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-10 text-center" onClick={e => e.stopPropagation()}><div className="mx-auto w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-2"><Trash2 size={32}/></div><h3 className="text-xl font-black text-slate-900 uppercase">Xác nhận xóa?</h3><p className="text-slate-500 text-sm italic">Xóa <span className="font-bold text-slate-900">{count}</span> dòng dữ liệu?</p><div className="flex gap-4 pt-4"><button onClick={onCancel} className="flex-1 py-3 bg-slate-100 rounded-2xl font-bold">Hủy</button><button onClick={onConfirm} className="flex-1 py-3 bg-rose-600 text-white rounded-2xl font-bold">Xóa</button></div></div></div>);
-        };
+        const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
+        const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
+        const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
+        const OVERALL_STATUS = ["Chờ duyệt", "Gấp", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
+        const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
+        
+        const STATUS_COLOR_MAP = { 
+            "Chờ duyệt": "#a855f7",
+            "Gấp": "#ef4444",
+            "Chưa bắt đầu": "#94a3b8", 
+            "Đang xử lý": "#6366f1", 
+            "Hoàn thành": "#10b981", 
+            "Không có task": "#cbd5e1",
+            "Không": "#cbd5e1"
+        };
+        const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
-        async function callGemini(payload) {
-            if (!apiKey) { alert("Cấu hình API Key."); return { candidates: [] }; }
-            try { return await (await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })).json(); } catch (error) { throw error; }
-        }
+        // --- COMPONENTS ---
+        const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const containerRef = useRef(null);
+            const handleToggle = (option) => onChange(selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]);
+            return (
+                <div className="w-full">
+                    <div ref={containerRef} onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
+                        <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
+                    </div>
+                    {isOpen && ReactDOM.createPortal(<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setIsOpen(false)}><div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in" onClick={e => e.stopPropagation()}><div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 className="text-lg font-black text-slate-800 uppercase">Phân loại</h3><button onClick={() => setIsOpen(false)}><X size={20}/></button></div><div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto custom-scrollbar p-1">{options.map(o => (<div key={o} onClick={() => handleToggle(o)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer ${selected.includes(o) ? 'border-indigo-600 bg-indigo-50 font-bold' : 'border-slate-100'}`}><div className={`w-5 h-5 rounded border flex items-center justify-center ${selected.includes(o) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>{selected.includes(o) && <Check size={14} className="text-white"/>}</div><span className="text-xs">{o}</span></div>))}</div><div className="mt-6 pt-4 border-t flex justify-end"><button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold">Xong ({selected.length})</button></div></div></div>, document.body)}
+                </div>
+            );
+        };
 
-        // --- APP ---
-        function App() {
-            const [user, setUser] = useState(null);
-            const [activeTab, setActiveTab] = useState('dashboard');
-            const [tasks, setTasks] = useState([]);
-            const [deleteModal, setDeleteModal] = useState({ open: false, ids: [] });
-            const [mockModalOpen, setMockModalOpen] = useState(false);
-            const [isAiLoading, setIsAiLoading] = useState(false);
-            const [aiAnalysis, setAiAnalysis] = useState("");
-            const [selectedIds, setSelectedIds] = useState([]);
-            const [lastSelectedId, setLastSelectedId] = useState(null);
-            const [toast, setToast] = useState(null);
-            const deletedDataRef = useRef([]);
-            const [sidebarOpen, setSidebarOpen] = useState(true);
-            const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-            const [colWidths, setColWidths] = useState({ check: 40, actions: 50, admin: 140, task: 250, overall: 160, unit: 180, brand: 350, operation: 350, media: 350 });
-            const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
-            const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
-            
-            const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
-            const [formData, setFormData] = useState(emptyFormData);
+        const Toast = ({ message, onUndo, onClose }) => (
+            <div className="fixed bottom-6 right-6 left-6 md:left-auto z-[10000] bg-slate-900 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-in fade-in">
+                <div className="flex flex-col flex-1"><span className="font-bold text-sm">Thông báo</span><span className="text-xs text-slate-300">{message}</span></div>
+                {onUndo && <button onClick={onUndo} className="px-3 py-1.5 bg-indigo-600 rounded-lg text-xs font-bold flex items-center gap-1"><Undo2 size={14}/> Hoàn tác</button>}
+                <button onClick={onClose}><X size={16}/></button>
+            </div>
+        );
 
-            const getColorClasses = (color) => { const map = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', rose: 'bg-rose-50 text-rose-600', amber: 'bg-amber-50 text-amber-600', blue: 'bg-blue-50 text-blue-600' }; return map[color] || 'bg-slate-50 text-slate-600'; };
+        const MockDataModal = ({ isOpen, onClose, onGenerate }) => {
+            const [quantity, setQuantity] = useState(10);
+            const [scenario, setScenario] = useState('random');
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in zoom-in" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2"><Database size={24} className="text-indigo-600"/> Dữ liệu mẫu</h3>
+                        <div className="space-y-6"><div><label className="text-sm font-bold text-slate-600 mb-2 block">Số lượng: <span className="text-indigo-600">{quantity}</span></label><input type="range" min="1" max="50" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-indigo-600"/></div><div><label className="text-sm font-bold text-slate-600 mb-2 block">Kịch bản</label><select className="w-full p-3 border rounded-xl text-sm outline-none" value={scenario} onChange={e => setScenario(e.target.value)}><option value="random">Ngẫu nhiên</option><option value="event">Mùa sự kiện</option><option value="admission">Tuyển sinh</option><option value="internal">Nội bộ</option></select></div></div>
+                        <div className="mt-8 flex gap-3"><button onClick={onClose} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold">Hủy</button><button onClick={() => { onGenerate(quantity, scenario); onClose(); }} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold">Tạo ngay</button></div>
+                    </div>
+                </div>
+            );
+        };
 
-            useEffect(() => { 
-                const handleResize = () => {
-                    const mobile = window.innerWidth < 1024;
-                    setIsMobile(mobile);
-                    
-                    // Khi chuyển sang desktop → luôn mở sidebar
-                    if (!mobile) {
-                        setSidebarOpen(true);
-                    }
-                    // Optional: trên mobile có thể đóng sidebar khi resize để gọn giao diện
-                    // else setSidebarOpen(false);
-                };
-                window.addEventListener('resize', handleResize);
-                handleResize(); 
-                return () => window.removeEventListener('resize', handleResize);
-            }, []);
+        const DeleteModal = ({ isOpen, onConfirm, onCancel, count }) => {
+            if (!isOpen) return null;
+            return (<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={onCancel}><div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-10 text-center" onClick={e => e.stopPropagation()}><div className="mx-auto w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-2"><Trash2 size={32}/></div><h3 className="text-xl font-black text-slate-900 uppercase">Xác nhận xóa?</h3><p className="text-slate-500 text-sm italic">Xóa <span className="font-bold text-slate-900">{count}</span> dòng dữ liệu?</p><div className="flex gap-4 pt-4"><button onClick={onCancel} className="flex-1 py-3 bg-slate-100 rounded-2xl font-bold">Hủy</button><button onClick={onConfirm} className="flex-1 py-3 bg-rose-600 text-white rounded-2xl font-bold">Xóa</button></div></div></div>);
+        };
 
-            useEffect(() => { if (!auth) return; signInAnonymously(auth).catch(e => console.error(e)); return onAuthStateChanged(auth, setUser); }, []);
+        async function callGemini(payload) {
+            if (!apiKey) { alert("Cấu hình API Key."); return { candidates: [] }; }
+            try { return await (await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })).json(); } catch (error) { throw error; }
+        }
 
-            useEffect(() => {
-                if (!user || !db) return;
-                const q = collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks');
-                return onSnapshot(q, (sn) => {
-                    const data = sn.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setTasks(data.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate)));
-                });
-            }, [user]);
+        // --- APP ---
+        function App() {
+            const [user, setUser] = useState(null);
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [tasks, setTasks] = useState([]);
+            const [deleteModal, setDeleteModal] = useState({ open: false, ids: [] });
+            const [mockModalOpen, setMockModalOpen] = useState(false);
+            const [isAiLoading, setIsAiLoading] = useState(false);
+            const [aiAnalysis, setAiAnalysis] = useState("");
+            const [selectedIds, setSelectedIds] = useState([]);
+            const [lastSelectedId, setLastSelectedId] = useState(null);
+            const [toast, setToast] = useState(null);
+            const deletedDataRef = useRef([]);
+            const [sidebarOpen, setSidebarOpen] = useState(true);
+            const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
-            const handleAddTask = async (e) => { e.preventDefault(); if(!db) return alert("Chưa kết nối DB"); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { ...formData, createdAt: serverTimestamp() }); setFormData(emptyFormData); setActiveTab('list'); alert("Tạo thành công!"); } catch (e) { alert("Lỗi: " + e.message); } };
+            const [colWidths, setColWidths] = useState({ check: 40, actions: 50, admin: 140, task: 250, overall: 160, unit: 180, brand: 350, operation: 350, media: 350 });
+            const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
+            const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
+            
+            const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
+            const [formData, setFormData] = useState(emptyFormData);
 
-            const debouncedUpdate = useCallback(_.debounce(async (id, data) => { if(!db) return; try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } catch (e) { console.error(e); } }, 800), []);
+            const getColorClasses = (color) => { const map = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', rose: 'bg-rose-50 text-rose-600', amber: 'bg-amber-50 text-amber-600', blue: 'bg-blue-50 text-blue-600' }; return map[color] || 'bg-slate-50 text-slate-600'; };
 
-            const handleUpdateTask = (id, updatedData) => { setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t)); debouncedUpdate(id, updatedData); };
+            useEffect(() => { 
+                const handleResize = () => {
+                    const mobile = window.innerWidth < 1024;
+                    setIsMobile(mobile);
+                    if (mobile) setSidebarOpen(false); else setSidebarOpen(true);
+                };
+                window.addEventListener('resize', handleResize);
+                handleResize(); 
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
 
-            const handleSelectRow = (e, id) => { 
-                const isSelecting = !selectedIds.includes(id); 
-                if (e.shiftKey && lastSelectedId) { 
-                    const currentIndex = filteredTasks.findIndex(t => t.id === id); 
-                    const lastIndex = filteredTasks.findIndex(t => t.id === lastSelectedId); 
-                    if (currentIndex !== -1 && lastIndex !== -1) { 
-                        const start = Math.min(currentIndex, lastIndex); 
-                        const end = Math.max(currentIndex, lastIndex); 
-                        const rangeIds = filteredTasks.slice(start, end + 1).map(t => t.id); 
-                        if (isSelecting) setSelectedIds(prev => [...new Set([...prev, ...rangeIds])]); 
-                        else setSelectedIds(prev => prev.filter(pid => !rangeIds.includes(pid))); 
-                    } 
-                } else { 
-                    if (isSelecting) setSelectedIds(prev => [...prev, id]); 
-                    else setSelectedIds(prev => prev.filter(i => i !== id)); 
-                } 
-                setLastSelectedId(id); 
-            };
+            useEffect(() => { if (!auth) return; signInAnonymously(auth).catch(e => console.error(e)); return onAuthStateChanged(auth, setUser); }, []);
 
-            const handleSelectAll = (filteredData) => { if (selectedIds.length === filteredData.length) setSelectedIds([]); else setSelectedIds(filteredData.map(t => t.id)); };
+            useEffect(() => {
+                if (!user || !db) return;
+                const q = collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks');
+                return onSnapshot(q, (sn) => {
+                    const data = sn.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setTasks(data.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate)));
+                });
+            }, [user]);
 
-            const confirmBulkDelete = async () => { 
-                if (!db || deleteModal.ids.length === 0) return; 
-                try { 
-                    const itemsToDelete = tasks.filter(t => deleteModal.ids.includes(t.id)); 
-                    deletedDataRef.current = itemsToDelete; 
-                    const batch = writeBatch(db); 
-                    deleteModal.ids.forEach(id => { 
-                        const ref = doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id); 
-                        batch.delete(ref); 
-                    }); 
-                    await batch.commit(); 
-                    setSelectedIds([]); 
-                    setDeleteModal({ open: false, ids: [] }); 
-                    setToast({ message: `Đã xóa ${itemsToDelete.length} dòng.`, undoable: true }); 
-                    setTimeout(() => setToast(null), 8000); 
-                } catch (e) { alert("Lỗi xóa: " + e.message); } 
-            };
+            const handleAddTask = async (e) => { e.preventDefault(); if(!db) return alert("Chưa kết nối DB"); try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { ...formData, createdAt: serverTimestamp() }); setFormData(emptyFormData); setActiveTab('list'); alert("Tạo thành công!"); } catch (e) { alert("Lỗi: " + e.message); } };
+            const debouncedUpdate = useCallback(_.debounce(async (id, data) => { if(!db) return; try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } catch (e) { console.error(e); } }, 800), []);
+            const handleUpdateTask = (id, updatedData) => { setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t)); debouncedUpdate(id, updatedData); };
+            const handleSelectRow = (e, id) => { const isSelecting = !selectedIds.includes(id); if (e.shiftKey && lastSelectedId) { const currentIndex = filteredTasks.findIndex(t => t.id === id); const lastIndex = filteredTasks.findIndex(t => t.id === lastSelectedId); if (currentIndex !== -1 && lastIndex !== -1) { const start = Math.min(currentIndex, lastIndex); const end = Math.max(currentIndex, lastIndex); const rangeIds = filteredTasks.slice(start, end + 1).map(t => t.id); if (isSelecting) setSelectedIds(prev => [...new Set([...prev, ...rangeIds])]); else setSelectedIds(prev => prev.filter(pid => !rangeIds.includes(pid))); } } else { if (isSelecting) setSelectedIds(prev => [...prev, id]); else setSelectedIds(prev => prev.filter(i => i !== id)); } setLastSelectedId(id); };
+            const handleSelectAll = (filteredData) => { if (selectedIds.length === filteredData.length) setSelectedIds([]); else setSelectedIds(filteredData.map(t => t.id)); };
+            const confirmBulkDelete = async () => { if (!db || deleteModal.ids.length === 0) return; try { const itemsToDelete = tasks.filter(t => deleteModal.ids.includes(t.id)); deletedDataRef.current = itemsToDelete; const batch = writeBatch(db); deleteModal.ids.forEach(id => { const ref = doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id); batch.delete(ref); }); await batch.commit(); setSelectedIds([]); setDeleteModal({ open: false, ids: [] }); setToast({ message: `Đã xóa ${itemsToDelete.length} dòng.`, undoable: true }); setTimeout(() => setToast(null), 8000); } catch (e) { alert("Lỗi xóa: " + e.message); } };
+            const handleUndo = async () => { if (!deletedDataRef.current.length) return; try { const batch = writeBatch(db); deletedDataRef.current.forEach(item => { const ref = doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', item.id); batch.set(ref, item); }); await batch.commit(); setToast({ message: "Hoàn tác thành công!", undoable: false }); setTimeout(() => setToast(null), 3000); deletedDataRef.current = []; } catch (e) { alert("Lỗi hoàn tác: " + e.message); } };
+            const generateMockData = async (qty, type) => { if(!db) return; const batch = writeBatch(db); try { const tasksPool = { event: ["Lễ Khai giảng", "Job Fair", "Gala", "Hội thảo"], admission: ["Tuyển sinh", "Livestream", "Open Day", "Ads"], internal: ["Mua sắm", "Trang trí", "Họp", "Đào tạo"], random: [] }; tasksPool.random = [...tasksPool.event, ...tasksPool.admission, ...tasksPool.internal]; const selectedPool = tasksPool[type] || tasksPool.random; for(let i = 0; i < qty; i++) { const newRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks')); const d = new Date(); d.setDate(d.getDate() + (Math.random() * 60 - 30)); const dateStr = d.toISOString().split('T')[0]; const taskName = selectedPool[Math.floor(Math.random() * selectedPool.length)] + " " + Math.floor(Math.random() * 100); batch.set(newRef, { orderDate: dateStr, paperStatus: PAPER_STATUS[Math.floor(Math.random() * PAPER_STATUS.length)], taskName: taskName, overallStatus: OVERALL_STATUS[Math.floor(Math.random() * OVERALL_STATUS.length)], unit: DEPARTMENTS[Math.floor(Math.random() * DEPARTMENTS.length)], categories: [CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]], brandTask: { name: "Triển khai content", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" }, operationTask: { name: "Hậu cần", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" }, mediaTask: { name: "Hình ảnh", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" }, createdAt: serverTimestamp() }); } await batch.commit(); alert(`Đã tạo ${qty} dòng!`); } catch (e) { alert("Lỗi: " + e.message); } };
+            const handleResize = (key, startX, startWidth) => { const move = (e) => setColWidths(prev => ({ ...prev, [key]: Math.max(50, startWidth + (e.clientX - startX)) })); const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
+            const downloadTemplate = () => { if (!window.XLSX) return; const data = [{ "OrderDate": "2026-01-07", "PaperStatus": "Chưa duyệt", "TaskName": "Tên sự kiện mẫu...", "OverallStatus": "Chưa bắt đầu", "Unit": "Văn phòng trường", "Categories": "Thiết kế", "BrandTaskName": "Content FB", "BrandDeadline": "2026-01-10", "BrandStatus": "Đang xử lý", "OperationTaskName": "", "OperationDeadline": "", "OperationStatus": "Không có task", "MediaTaskName": "", "MediaDeadline": "", "MediaStatus": "Không có task" }]; const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tasks"); XLSX.writeFile(wb, "MarCom_Template.xlsx"); };
+            const handleFileUpload = (e) => { if (!window.XLSX || !db) return; const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async (evt) => { try { const bstr = evt.target.result; const wb = XLSX.read(bstr, { type: 'binary' }); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); let count = 0; const batch = writeBatch(db); for (const row of data.slice(0, 490)) { const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks')); batch.set(newDocRef, { ...emptyFormData, orderDate: processExcelDate(row["OrderDate"] || row["Ngày Order"]) || new Date().toISOString().split('T')[0], paperStatus: row["PaperStatus"] || "Chưa duyệt", taskName: row["TaskName"] || "Không tên", overallStatus: row["OverallStatus"] || "Chưa bắt đầu", unit: row["Unit"] || "Toàn trường", categories: row["Categories"] ? row["Categories"].split(',').map(s => s.trim()) : [], brandTask: { name: row["BrandTaskName"] || "", deadline: processExcelDate(row["BrandDeadline"]) || "", status: row["BrandStatus"] || "Chưa bắt đầu", link: "" }, operationTask: { name: row["OperationTaskName"] || "", deadline: processExcelDate(row["OperationDeadline"]) || "", status: row["OperationStatus"] || "Chưa bắt đầu", link: "" }, mediaTask: { name: row["MediaTaskName"] || "", deadline: processExcelDate(row["MediaDeadline"]) || "", status: row["MediaStatus"] || "Chưa bắt đầu", link: "" } }); count++; } await batch.commit(); alert(`Đã nhập ${count} dòng!`); setActiveTab('list'); } catch (err) { alert("Lỗi: " + err.message); } }; reader.readAsBinaryString(file); e.target.value = null; };
+            const handleAiOptimize = async () => { if (!formData.taskName) return; setIsAiLoading(true); try { const res = await callGemini({ contents: [{ parts: [{ text: `Task: ${formData.taskName}` }] }], systemInstruction: { parts: [{ text: `MarCom expert. Categories: ${CATEGORIES.join(', ')}. JSON: { "title": "...", "cats": ["..."] }` }] }, generationConfig: { responseMimeType: "application/json" } }); const data = JSON.parse(res.candidates[0].content.parts[0].text); setFormData(p => ({ ...p, taskName: data.title, categories: data.cats })); } catch (e) { console.error(e); } finally { setIsAiLoading(false); } };
+            const handleAiAnalysis = async () => { if (tasks.length === 0) return; setIsAiLoading(true); try { const ctx = tasks.map(t => `${t.taskName} (${t.overallStatus})`).join(', '); const res = await callGemini({ contents: [{ parts: [{ text: `Data: ${ctx.substring(0, 1500)}` }] }], systemInstruction: { parts: [{ text: "Nhận xét ngắn gọn 3 câu tiếng Việt." }] } }); setAiAnalysis(res.candidates[0].content.parts[0].text); } catch (e) { console.error(e); } finally { setIsAiLoading(false); } };
 
-            const handleUndo = async () => { 
-                if (!deletedDataRef.current.length) return; 
-                try { 
-                    const batch = writeBatch(db); 
-                    deletedDataRef.current.forEach(item => { 
-                        const ref = doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', item.id); 
-                        batch.set(ref, item); 
-                    }); 
-                    await batch.commit(); 
-                    setToast({ message: "Hoàn tác thành công!", undoable: false }); 
-                    setTimeout(() => setToast(null), 3000); 
-                    deletedDataRef.current = []; 
-                } catch (e) { alert("Lỗi hoàn tác: " + e.message); } 
-            };
+            const filteredTasks = useMemo(() => tasks.filter(t => {
+                const dateG = (!globalFilters.dateStart || t.orderDate >= globalFilters.dateStart) && (!globalFilters.dateEnd || t.orderDate <= globalFilters.dateEnd);
+                const unitG = !globalFilters.unit || t.unit === globalFilters.unit;
+                const dateC = !colFilters.date || t.orderDate.includes(colFilters.date);
+                const nameC = !colFilters.task || t.taskName.toLowerCase().includes(colFilters.task.toLowerCase());
+                const overallC = !colFilters.overall || t.overallStatus === colFilters.overall;
+                const unitC = !colFilters.unit || t.unit.toLowerCase().includes(colFilters.unit.toLowerCase());
+                return dateG && unitG && dateC && nameC && overallC && unitC;
+            }), [tasks, globalFilters, colFilters]);
 
-            const generateMockData = async (qty, type) => { 
-                if(!db) return; 
-                const batch = writeBatch(db); 
-                try { 
-                    const tasksPool = { event: ["Lễ Khai giảng", "Job Fair", "Gala", "Hội thảo"], admission: ["Tuyển sinh", "Livestream", "Open Day", "Ads"], internal: ["Mua sắm", "Trang trí", "Họp", "Đào tạo"], random: [] }; 
-                    tasksPool.random = [...tasksPool.event, ...tasksPool.admission, ...tasksPool.internal]; 
-                    const selectedPool = tasksPool[type] || tasksPool.random; 
-                    for(let i = 0; i < qty; i++) { 
-                        const newRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks')); 
-                        const d = new Date(); 
-                        d.setDate(d.getDate() + (Math.random() * 60 - 30)); 
-                        const dateStr = d.toISOString().split('T')[0]; 
-                        const taskName = selectedPool[Math.floor(Math.random() * selectedPool.length)] + " " + Math.floor(Math.random() * 100); 
-                        batch.set(newRef, { 
-                            orderDate: dateStr, 
-                            paperStatus: PAPER_STATUS[Math.floor(Math.random() * PAPER_STATUS.length)], 
-                            taskName: taskName, 
-                            overallStatus: OVERALL_STATUS[Math.floor(Math.random() * OVERALL_STATUS.length)], 
-                            unit: DEPARTMENTS[Math.floor(Math.random() * DEPARTMENTS.length)], 
-                            categories: [CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]], 
-                            brandTask: { name: "Triển khai content", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" }, 
-                            operationTask: { name: "Hậu cần", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" }, 
-                            mediaTask: { name: "Hình ảnh", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" }, 
-                            createdAt: serverTimestamp() 
-                        }); 
-                    } 
-                    await batch.commit(); 
-                    alert(`Đã tạo ${qty} dòng!`); 
-                } catch (e) { alert("Lỗi: " + e.message); } 
-            };
+            const chartDataOverall = useMemo(() => { const counts = {}; OVERALL_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t.overallStatus || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); }, [filteredTasks]);
+            const teamVolumeData = useMemo(() => [{ name: 'Brand', value: filteredTasks.filter(t => t.brandTask?.status !== 'Không có task').length }, { name: 'Operation', value: filteredTasks.filter(t => t.operationTask?.status !== 'Không có task').length }, { name: 'Media', value: filteredTasks.filter(t => t.mediaTask?.status !== 'Không có task').length }], [filteredTasks]);
+            
+            const getTeamStats = (teamKey) => {
+                const counts = {};
+                TASK_STATUS.forEach(s => counts[s] = 0);
+                filteredTasks.forEach(t => {
+                    const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu';
+                    if (counts[s] !== undefined) counts[s]++;
+                });
+                return Object.entries(counts).map(([name, value]) => ({ name, value }));
+            };
 
-            const handleResize = (key, startX, startWidth) => { 
-                const move = (e) => setColWidths(prev => ({ ...prev, [key]: Math.max(50, startWidth + (e.clientX - startX)) })); 
-                const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; 
-                document.addEventListener('mousemove', move); 
-                document.addEventListener('mouseup', up); 
-            };
+            const teamUrgent = (teamKey) => { const today = new Date(); const limit = new Date(); limit.setDate(today.getDate() + 3); return filteredTasks.filter(t => { const dStr = t[`${teamKey}Task`]?.deadline; if (!dStr) return false; const deadlineDate = new Date(dStr); return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không có task'; }); };
+            const chartDataCategory = useMemo(() => { const data = CATEGORIES.map(cat => ({ name: cat, completed: 0, pending: 0 })); filteredTasks.forEach(t => { const isCompleted = t.overallStatus === "Hoàn thành"; t.categories.forEach(cat => { const idx = data.findIndex(d => d.name === cat); if (idx !== -1) { if (isCompleted) data[idx].completed++; else data[idx].pending++; } }); }); return data; }, [filteredTasks]);
 
-            const downloadTemplate = () => { 
-                if (!window.XLSX) return; 
-                const data = [{ 
-                    "OrderDate": "2026-01-07", 
-                    "PaperStatus": "Chưa duyệt", 
-                    "TaskName": "Tên sự kiện mẫu...", 
-                    "OverallStatus": "Chưa bắt đầu", 
-                    "Unit": "Văn phòng trường", 
-                    "Categories": "Thiết kế", 
-                    "BrandTaskName": "Content FB", 
-                    "BrandDeadline": "2026-01-10", 
-                    "BrandStatus": "Đang xử lý", 
-                    "OperationTaskName": "", 
-                    "OperationDeadline": "", 
-                    "OperationStatus": "Không có task", 
-                    "MediaTaskName": "", 
-                    "MediaDeadline": "", 
-                    "MediaStatus": "Không có task" 
-                }]; 
-                const ws = XLSX.utils.json_to_sheet(data); 
-                const wb = XLSX.utils.book_new(); 
-                XLSX.utils.book_append_sheet(wb, ws, "Tasks"); 
-                XLSX.writeFile(wb, "MarCom_Template.xlsx"); 
-            };
+            useEffect(() => {
+                document.documentElement.style.setProperty('--col-width-check', `${colWidths.check}px`);
+                document.documentElement.style.setProperty('--col-width-actions', `${colWidths.actions}px`);
+                document.documentElement.style.setProperty('--col-width-admin', `${colWidths.admin}px`);
+                document.documentElement.style.setProperty('--col-width-task', `${colWidths.task}px`);
+            }, [colWidths]);
 
-            const handleFileUpload = (e) => { 
-                if (!window.XLSX || !db) return; 
-                const file = e.target.files[0]; 
-                if (!file) return; 
-                const reader = new FileReader(); 
-                reader.onload = async (evt) => { 
-                    try { 
-                        const bstr = evt.target.result; 
-                        const wb = XLSX.read(bstr, { type: 'binary' }); 
-                        const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); 
-                        let count = 0; 
-                        const batch = writeBatch(db); 
-                        for (const row of data.slice(0, 490)) { 
-                            const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks')); 
-                            batch.set(newDocRef, { 
-                                ...emptyFormData, 
-                                orderDate: processExcelDate(row["OrderDate"] || row["Ngày Order"]) || new Date().toISOString().split('T')[0], 
-                                paperStatus: row["PaperStatus"] || "Chưa duyệt", 
-                                taskName: row["TaskName"] || "Không tên", 
-                                overallStatus: row["OverallStatus"] || "Chưa bắt đầu", 
-                                unit: row["Unit"] || "Toàn trường", 
-                                categories: row["Categories"] ? row["Categories"].split(',').map(s => s.trim()) : [], 
-                                brandTask: { name: row["BrandTaskName"] || "", deadline: processExcelDate(row["BrandDeadline"]) || "", status: row["BrandStatus"] || "Chưa bắt đầu", link: "" }, 
-                                operationTask: { name: row["OperationTaskName"] || "", deadline: processExcelDate(row["OperationDeadline"]) || "", status: row["OperationStatus"] || "Chưa bắt đầu", link: "" }, 
-                                mediaTask: { name: row["MediaTaskName"] || "", deadline: processExcelDate(row["MediaDeadline"]) || "", status: row["MediaStatus"] || "Chưa bắt đầu", link: "" } 
-                            }); 
-                            count++; 
-                        } 
-                        await batch.commit(); 
-                        alert(`Đã nhập ${count} dòng!`); 
-                        setActiveTab('list'); 
-                    } catch (err) { alert("Lỗi: " + err.message); } 
-                }; 
-                reader.readAsBinaryString(file); 
-                e.target.value = null; 
-            };
+            if (!db) return ( <div className="h-screen flex items-center justify-center bg-slate-50 p-6"><div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg"><h2 className="text-2xl font-black text-slate-900 mb-2">Đang tải...</h2></div></div> );
 
-            const handleAiOptimize = async () => { 
-                if (!formData.taskName) return; 
-                setIsAiLoading(true); 
-                try { 
-                    const res = await callGemini({ 
-                        contents: [{ parts: [{ text: `Task: ${formData.taskName}` }] }], 
-                        systemInstruction: { parts: [{ text: `MarCom expert. Categories: ${CATEGORIES.join(', ')}. JSON: { "title": "...", "cats": ["..."] }` }] }, 
-                        generationConfig: { responseMimeType: "application/json" } 
-                    }); 
-                    const data = JSON.parse(res.candidates[0].content.parts[0].text); 
-                    setFormData(p => ({ ...p, taskName: data.title, categories: data.cats })); 
-                } catch (e) { console.error(e); } 
-                finally { setIsAiLoading(false); } 
-            };
+            return (
+                <div className="flex font-sans h-full flex-col">
+                    {isAiLoading && (<div className="fixed inset-0 z-[20000] bg-white/60 backdrop-blur-sm flex items-center justify-center flex-col gap-4"><div className="animate-spin text-indigo-600"><RefreshCw size={48}/></div><p className="font-black text-indigo-950 uppercase text-sm animate-pulse">✨ AI đang xử lý...</p></div>)}
+                    <DeleteModal isOpen={deleteModal.open} count={deleteModal.ids.length} onCancel={() => setDeleteModal({ open: false, ids: [] })} onConfirm={confirmBulkDelete} />
+                    {mockModalOpen && <MockDataModal isOpen={mockModalOpen} onClose={() => setMockModalOpen(false)} onGenerate={generateMockData} />}
+                    {toast && <Toast message={toast.message} onUndo={toast.undoable ? handleUndo : undefined} onClose={() => setToast(null)} />}
+                    
+                    {/* SIDEBAR & OVERLAY */}
+                    {isMobile && sidebarOpen && (
+                        <div className="fixed inset-0 bg-black/50 z-[90] animate-in fade-in" onClick={() => setSidebarOpen(false)}></div>
+                    )}
+                    <aside className={`sidebar-transition fixed inset-y-0 left-0 z-[100] text-white shadow-2xl bg-[#0F172A] w-64 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isMobile ? '' : 'lg:translate-x-0 lg:w-64'}`}>
+                        <div className="p-8 border-b border-slate-800 flex items-center justify-between overflow-hidden">
+                            <div className="flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.20</span></h1></div>
+                            {isMobile && <button onClick={() => setSidebarOpen(false)} className="text-slate-400"><X size={24}/></button>}
+                        </div>
+                        <nav className="p-4 flex-1 space-y-1">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => { setActiveTab(tab.id); if(isMobile) setSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
+                        <div className="p-4 border-t border-slate-800"><button onClick={() => setMockModalOpen(true)} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Dữ liệu mẫu</button></div>
+                    </aside>
 
-            const handleAiAnalysis = async () => { 
-                if (tasks.length === 0) return; 
-                setIsAiLoading(true); 
-                try { 
-                    const ctx = tasks.map(t => `${t.taskName} (${t.overallStatus})`).join(', '); 
-                    const res = await callGemini({ 
-                        contents: [{ parts: [{ text: `Data: ${ctx.substring(0, 1500)}` }] }], 
-                        systemInstruction: { parts: [{ text: "Nhận xét ngắn gọn 3 câu tiếng Việt." }] } 
-                    }); 
-                    setAiAnalysis(res.candidates[0].content.parts[0].text); 
-                } catch (e) { console.error(e); } 
-                finally { setIsAiLoading(false); } 
-            };
+                    {/* MAIN CONTENT */}
+                    <main className={`main-transition flex-1 p-4 lg:p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F1F5F9] ${sidebarOpen && !isMobile ? 'ml-64' : 'ml-0'}`}>
+                        <div className="flex-none flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 sticky top-0 bg-[#F1F5F9] z-[30] pb-2">
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-indigo-600 border border-slate-200 transition-all">
+                                    {sidebarOpen ? <ChevronLeft size={20}/> : <Menu size={20}/>}
+                                </button>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase">{activeTab === 'dashboard' ? 'Thống kê' : activeTab === 'list' ? 'Danh sách' : 'Tạo việc'}</h2>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                                <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2 h-10 flex-1 md:flex-none">
+                                    <div className="px-2 text-indigo-600"><Building2 size={16}/></div>
+                                    <select className="text-xs font-bold text-slate-600 outline-none bg-transparent border-none w-full md:w-40" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}><option value="">Đơn vị</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select>
+                                </div>
+                                <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2 h-10 flex-1 md:flex-none">
+                                    <div className="px-2 text-indigo-600"><Calendar size={16}/></div>
+                                    <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent w-full" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} />
+                                    <span className="text-slate-300">-</span>
+                                    <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent w-full" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} />
+                                </div>
+                                {(globalFilters.dateStart || globalFilters.dateEnd || globalFilters.unit) && <button onClick={() => setGlobalFilters({dateStart:'', dateEnd:'', unit:'', category:''})} className="p-2.5 bg-rose-50 rounded-xl text-rose-500 hover:bg-rose-100 transition-colors"><X size={16}/></button>}
+                            </div>
+                        </div>
 
-            const filteredTasks = useMemo(() => tasks.filter(t => {
-                const dateG = (!globalFilters.dateStart || t.orderDate >= globalFilters.dateStart) && (!globalFilters.dateEnd || t.orderDate <= globalFilters.dateEnd);
-                const unitG = !globalFilters.unit || t.unit === globalFilters.unit;
-                const dateC = !colFilters.date || t.orderDate.includes(colFilters.date);
-                const nameC = !colFilters.task || t.taskName.toLowerCase().includes(colFilters.task.toLowerCase());
-                const overallC = !colFilters.overall || t.overallStatus === colFilters.overall;
-                const unitC = !colFilters.unit || t.unit.toLowerCase().includes(colFilters.unit.toLowerCase());
-                return dateG && unitG && dateC && nameC && overallC && unitC;
-            }), [tasks, globalFilters, colFilters]);
+                        {activeTab === 'dashboard' && (
+                           <div className="space-y-6 md:space-y-10 animate-in fade-in pb-20">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">{[{ label: 'Tổng Ticket', val: filteredTasks.length, color: 'indigo', Icon: TableIcon }, { label: 'Hoàn thành', val: filteredTasks.filter(t => t.overallStatus === 'Hoàn thành').length, color: 'emerald', Icon: CheckCircle2 }, { label: 'Đang xử lý', val: filteredTasks.filter(t => t.overallStatus === 'Đang xử lý').length, color: 'amber', Icon: Clock }, { label: 'Chưa duyệt', val: filteredTasks.filter(t => t.paperStatus === 'Chưa duyệt').length, color: 'rose', Icon: AlertCircle }].map((kpi, i) => (<div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm"><div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-4 ${getColorClasses(kpi.color)}`}><kpi.Icon size={20}/></div><h4 className="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">{kpi.label}</h4><p className="text-3xl font-black text-slate-900">{kpi.val}</p></div>))}</div>
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                 <div className="bg-white p-6 rounded-[2rem] border border-slate-200 h-[300px] md:h-[400px]"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 text-center tracking-widest underline decoration-indigo-200">Trạng thái tổng</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataOverall}><XAxis dataKey="name" style={{fontSize: '9px', fontWeight: 700}} /><Tooltip /><Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>{chartDataOverall.map((s, i) => <Cell key={i} fill={STATUS_COLOR_MAP[s.name]} />)}</Bar></BarChart></ResponsiveContainer></div>
+                                 <div className="bg-white p-6 rounded-[2rem] border border-slate-200 h-[300px] md:h-[400px] flex flex-col items-center"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 tracking-widest underline decoration-indigo-200">Khối lượng Team</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={teamVolumeData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={80} style={{fontSize: '11px', fontWeight: 800}} /><Tooltip /><Bar dataKey="value" barSize={30} radius={[0, 8, 8, 0]}>{teamVolumeData.map((e, i) => <Cell key={i} fill={TEAM_COLORS[e.name.toLowerCase()]} />)}</Bar></BarChart></ResponsiveContainer></div>
+                              </div>
+                              <div className="bg-white p-6 rounded-[2rem] border border-slate-200 h-[400px]"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 text-center tracking-widest underline decoration-indigo-200">Tiến độ theo hạng mục</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataCategory} margin={{top: 20, right: 10, left: 0, bottom: 5}}><XAxis dataKey="name" style={{fontSize: '9px', fontWeight: 700}} interval={0} angle={-15} textAnchor="end" height={60} /><YAxis style={{fontSize: '10px'}} /><Tooltip /><Legend /><Bar dataKey="completed" name="Xong" stackId="a" fill="#10b981" barSize={40} /><Bar dataKey="pending" name="Chưa" stackId="a" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={40} /></BarChart></ResponsiveContainer></div>
+                              
+                              {/* TEAM CHARTS & URGENT TASKS */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {['brand', 'operation', 'media'].map(t => (
+                                   <div key={t} className={`p-6 bg-white rounded-[2rem] border border-slate-200 h-[450px] flex flex-col`}>
+                                      <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex justify-between"><span>Team {t.toUpperCase()}</span><span className="bg-rose-50 px-2 py-0.5 rounded text-rose-600 font-bold">{teamUrgent(t).length} gấp</span></h4>
+                                      
+                                      {/* Pie Chart Section */}
+                                      <div className="h-48 w-full mb-4">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={getTeamStats(t).filter(d => d.value > 0)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={40} paddingAngle={5}>
+                                                    {getTeamStats(t).map((entry, index) => <Cell key={`cell-${index}`} fill={STATUS_COLOR_MAP[entry.name]} />)}
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend iconSize={8} layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize: '10px'}}/>
+                                            </PieChart>
+                                          </ResponsiveContainer>
+                                      </div>
 
-            const chartDataOverall = useMemo(() => { 
-                const counts = {}; 
-                OVERALL_STATUS.forEach(s => counts[s] = 0); 
-                filteredTasks.forEach(t => { 
-                    const s = t.overallStatus || 'Chưa bắt đầu'; 
-                    if (counts[s] !== undefined) counts[s]++; 
-                }); 
-                return Object.entries(counts).map(([name, value]) => ({ name, value })); 
-            }, [filteredTasks]);
+                                      {/* Urgent List Section */}
+                                      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2 border-t border-slate-100 pt-3">
+                                          {teamUrgent(t).length === 0 ? <div className="h-full flex items-center justify-center text-slate-300 italic text-xs">Ổn định</div> : teamUrgent(t).map(item => (<div key={item.id} className="p-3 bg-rose-50/50 rounded-xl border border-rose-100"><div className="text-[10px] font-bold text-slate-700 leading-tight mb-1 truncate">{item.taskName}</div><div className="flex justify-between items-center text-[9px] font-bold text-rose-500"><span className="truncate max-w-[80px]">{item[`${t}Task`].name || "Chưa có tên"}</span><span className="flex items-center gap-1"><Clock size={10}/> {item[`${t}Task`].deadline}</span></div></div>))}
+                                      </div>
+                                   </div>
+                                ))}
+                              </div>
+                           </div>
+                        )}
 
-            const teamVolumeData = useMemo(() => [
-                { name: 'Brand', value: filteredTasks.filter(t => t.brandTask?.status !== 'Không có task').length }, 
-                { name: 'Operation', value: filteredTasks.filter(t => t.operationTask?.status !== 'Không có task').length }, 
-                { name: 'Media', value: filteredTasks.filter(t => t.mediaTask?.status !== 'Không có task').length }
-            ], [filteredTasks]);
-            
-            const getTeamStats = (teamKey) => {
-                const counts = {};
-                TASK_STATUS.forEach(s => counts[s] = 0);
-                filteredTasks.forEach(t => {
-                    const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu';
-                    if (counts[s] !== undefined) counts[s]++;
-                });
-                return Object.entries(counts).map(([name, value]) => ({ name, value }));
-            };
+                        {activeTab === 'input' && (
+                           <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom pb-20">
+                              <form onSubmit={handleAddTask} className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-slate-200 shadow-xl space-y-8 md:space-y-12">
+                                 <div className="space-y-6"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">I. Thông tin chung</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-1"><label className="text-sm font-bold">Tên Task *</label><input required className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none" value={formData.taskName} onChange={e => setFormData({...formData, taskName: e.target.value})} placeholder="Tên chiến dịch..." /></div><div className="space-y-1"><label className="text-sm font-bold">Đơn vị *</label><select required className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none font-bold" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})}><option value="">-- Chọn đơn vị --</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div></div><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><div className="space-y-1"><label className="text-sm font-bold">Ngày Order</label><input type="date" className="w-full px-4 py-3 rounded-xl border-slate-200 bg-slate-50 text-sm outline-none" value={formData.orderDate} onChange={e => setFormData({...formData, orderDate: e.target.value})} /></div><div className="space-y-1"><label className="text-sm font-bold text-indigo-600">Trạng thái tổng *</label><select className="w-full px-4 py-3 rounded-xl border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-700" value={formData.overallStatus} onChange={e => setFormData({...formData, overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><div className="space-y-1"><label className="text-sm font-bold">Phân loại</label><MultiSelectModal options={CATEGORIES} selected={formData.categories} onChange={v => setFormData({...formData, categories: v})} /></div></div></div>
+                                 <div className="space-y-6 pt-6 border-t border-slate-100"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">II. Phân công đội ngũ</h3><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{['brand', 'operation', 'media'].map(t => (<div key={t} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3"><span className="text-[10px] font-black uppercase text-slate-400">Team {t.toUpperCase()}</span><input className="w-full p-2 text-[11px] border border-slate-200 rounded-lg font-bold bg-white" placeholder="Tên task..." value={formData[`${t}Task`].name} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], name: e.target.value}})} /><select className="w-full p-2 text-[11px] border rounded-lg font-bold bg-white outline-none" value={formData[`${t}Task`].status} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select><input type="date" className="w-full p-2 text-[11px] border rounded-lg bg-white outline-none" value={formData[`${t}Task`].deadline} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], deadline: e.target.value}})} /></div>))}</div></div>
+                                 <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all text-lg uppercase tracking-tighter">Tạo công việc</button>
+                              </form>
+                           </div>
+                        )}
 
-            const teamUrgent = (teamKey) => { 
-                const today = new Date(); 
-                const limit = new Date(); 
-                limit.setDate(today.getDate() + 3); 
-                return filteredTasks.filter(t => { 
-                    const dStr = t[`${teamKey}Task`]?.deadline; 
-                    if (!dStr) return false; 
-                    const deadlineDate = new Date(dStr); 
-                    return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không có task'; 
-                }); 
-            };
+                        {activeTab === 'list' && (
+                           <div className="flex flex-col h-full overflow-hidden">
+                              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+                                <div className="flex gap-2 w-full md:w-auto">
+                                    {selectedIds.length > 0 && (<button onClick={() => setDeleteModal({ open: true, ids: selectedIds })} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-xl shadow-lg font-bold hover:bg-rose-700 transition-all animate-in fade-in"><Trash2 size={16}/> Xóa {selectedIds.length}</button>)}
+                                    <button onClick={downloadTemplate} className="flex-1 md:flex-none p-2 bg-white border rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all flex justify-center"><Download size={20}/></button>
+                                    <label className="flex-1 md:flex-none p-2 bg-indigo-600 text-white rounded-xl shadow-lg cursor-pointer hover:bg-indigo-700 transition-all flex justify-center"><Upload size={20}/><input type="file" className="hidden" onChange={handleFileUpload}/></label>
+                                </div>
+                              </div>
+                              <div className="bg-white rounded-[2rem] border shadow-sm flex-1 overflow-hidden relative flex flex-col">
+                                 <div className="overflow-auto custom-scrollbar flex-1 pb-20">
+                                    <table className="table-fixed text-left border-collapse divide-x divide-slate-100" style={{ width: 'max-content' }}>
+                                       <thead className="sticky top-0 z-[40]">
+                                          <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase text-slate-400 tracking-widest divide-x divide-slate-200">
+                                            <th className="px-4 py-4 sticky-col-0 text-center"><input type="checkbox" onChange={() => handleSelectAll(filteredTasks)} checked={filteredTasks.length > 0 && selectedIds.length === filteredTasks.length} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></th>
+                                            <th className="px-4 py-4 sticky-col-1 text-center" style={{ width: colWidths.actions }}># <div className="resizer" onMouseDown={(e) => handleResize('actions', e.clientX, colWidths.actions)} /></th>
+                                            <th className="px-6 py-4 sticky-col-2" style={{ width: colWidths.admin }}>Hành chính <div className="resizer" onMouseDown={(e) => handleResize('admin', e.clientX, colWidths.admin)} /></th>
+                                            <th className="px-6 py-4 sticky-col-3" style={{ width: colWidths.task }}>Tên Task <div className="resizer" onMouseDown={(e) => handleResize('task', e.clientX, colWidths.task)} /></th>
+                                            <th className="px-6 py-4 sticky-col-4 bg-indigo-50/50" style={{ width: colWidths.overall }}>Hoàn thành tổng <div className="resizer" onMouseDown={(e) => handleResize('overall', e.clientX, colWidths.overall)} /></th>
+                                            <th className="px-6 py-4" style={{ width: colWidths.unit }}>Đơn vị <div className="resizer" onMouseDown={(e) => handleResize('unit', e.clientX, colWidths.unit)} /></th>
+                                            <th className="px-6 py-4 bg-purple-100" style={{ width: colWidths.brand }}>Brand Team <div className="resizer" onMouseDown={(e) => handleResize('brand', e.clientX, colWidths.brand)} /></th>
+                                            <th className="px-6 py-4 bg-orange-100" style={{ width: colWidths.operation }}>Operation Team <div className="resizer" onMouseDown={(e) => handleResize('operation', e.clientX, colWidths.operation)} /></th>
+                                            <th className="px-6 py-4 bg-sky-100" style={{ width: colWidths.media }}>Media Team <div className="resizer" onMouseDown={(e) => handleResize('media', e.clientX, colWidths.media)} /></th>
+                                          </tr>
+                                          <tr className="bg-white border-b divide-x divide-slate-100">
+                                            <th className="sticky-col-0"></th>
+                                            <th className="sticky-col-1"></th>
+                                            <th className="p-2 sticky-col-2"><input className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-slate-50 outline-none" placeholder="Lọc ngày..." value={colFilters.date} onChange={e => setColFilters({...colFilters, date: e.target.value})}/></th>
+                                            <th className="p-2 sticky-col-3"><input className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-slate-50 outline-none" placeholder="Lọc task..." value={colFilters.task} onChange={e => setColFilters({...colFilters, task: e.target.value})}/></th>
+                                            <th className="p-2 sticky-col-4 bg-indigo-50/50"><select className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-slate-50 outline-none font-bold" value={colFilters.overall} onChange={e => setColFilters({...colFilters, overall: e.target.value})}><option value="">Tất cả</option>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></th>
+                                            <th className="p-2"><input className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-slate-50 outline-none font-bold" placeholder="Lọc đơn vị..." value={colFilters.unit} onChange={e => setColFilters({...colFilters, unit: e.target.value})}/></th>
+                                            <th colSpan="3"></th>
+                                          </tr>
+                                       </thead>
+                                       <tbody className="divide-y divide-slate-100">
+                                          {filteredTasks.map(task => (
+                                             <tr key={task.id} className={`transition-colors divide-x divide-slate-100 ${selectedIds.includes(task.id) ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
+                                                <td className="px-4 py-4 sticky-col-0 text-center z-20"><input type="checkbox" checked={selectedIds.includes(task.id)} onChange={(e) => handleSelectRow(e, task.id)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></td>
+                                                <td className="px-4 py-4 sticky-col-1 text-center z-20"><button onClick={() => setDeleteModal({ open: true, ids: [task.id] })} className="p-2 text-slate-300 hover:text-rose-600 transition-all rounded-lg hover:bg-rose-50"><Trash2 size={16}/></button></td>
+                                                <td className="px-6 py-4 sticky-col-2 z-20 text-[10px]"><input type="date" className="w-full border-none bg-transparent font-bold p-0 mb-1 focus:ring-0 outline-none" value={task.orderDate} onChange={e => handleUpdateTask(task.id, {orderDate: e.target.value})} /><select className={`text-[9px] w-full border-none p-0 focus:ring-0 font-black uppercase outline-none ${task.paperStatus === 'Hiệu trưởng duyệt' ? 'text-indigo-600' : task.paperStatus === 'Đã duyệt' ? 'text-emerald-600' : 'text-rose-500'}`} value={task.paperStatus} onChange={e => handleUpdateTask(task.id, {paperStatus: e.target.value})}>{PAPER_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
+                                                <td className="px-6 py-4 sticky-col-3 z-20 !overflow-visible"><input className="text-xs w-full border-none bg-transparent font-black text-slate-900 p-0 mb-1 focus:ring-0 truncate outline-none" value={task.taskName} onChange={e => handleUpdateTask(task.id, {taskName: e.target.value})} /><MultiSelectModal inline options={CATEGORIES} selected={task.categories} onChange={v => handleUpdateTask(task.id, {categories: v})} /></td>
+                                                <td className="px-6 py-4 sticky-col-4 z-20 bg-indigo-50/30 text-center"><select className={`text-[10px] w-full border-none bg-transparent p-0 focus:ring-0 font-black uppercase text-center outline-none`} style={{ color: STATUS_COLOR_MAP[task.overallStatus] }} value={task.overallStatus} onChange={e => handleUpdateTask(task.id, {overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
+                                                <td className="px-6 py-4"><select className="text-[10px] w-full border-none bg-transparent p-0 font-bold text-slate-600 focus:ring-0 outline-none" value={task.unit} onChange={e => handleUpdateTask(task.id, {unit: e.target.value})}>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></td>
+                                                {['brand', 'operation', 'media'].map(t => (<td key={t} className={`px-6 py-4 ${t === 'brand' ? 'bg-purple-50' : t === 'operation' ? 'bg-orange-50' : 'bg-sky-50'}`}><div className="flex flex-col gap-1.5"><input className="text-[11px] w-full border-none bg-transparent p-0 focus:ring-0 font-black text-slate-700 outline-none" value={task[`${t}Task`].name} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], name: e.target.value}})} /><div className="flex gap-2"><input type="date" className="text-[9px] border-none bg-transparent p-0 font-black w-1/2 outline-none" value={task[`${t}Task`].deadline} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], deadline: e.target.value}})} /><select className={`text-[9px] border-none bg-transparent p-0 font-black w-1/2 outline-none ${task[`${t}Task`].status === 'Hoàn thành' ? 'text-emerald-600' : 'text-slate-400'}`} value={task[`${t}Task`].status} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><input className="text-[8px] border-none bg-transparent p-0 text-indigo-500 font-bold outline-none italic" value={task[`${t}Task`].link} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], link: e.target.value}})} placeholder="Link trả..." /></div></td>))}
+                                             </tr>
+                                          ))}
+                                       </tbody>
+                                    </table>
+                                 </div>
+                              </div>
+                           </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
 
-            const chartDataCategory = useMemo(() => { 
-                const data = CATEGORIES.map(cat => ({ name: cat, completed: 0, pending: 0 })); 
-                filteredTasks.forEach(t => { 
-                    const isCompleted = t.overallStatus === "Hoàn thành"; 
-                    t.categories.forEach(cat => { 
-                        const idx = data.findIndex(d => d.name === cat); 
-                        if (idx !== -1) { 
-                            if (isCompleted) data[idx].completed++; 
-                            else data[idx].pending++; 
-                        } 
-                    }); 
-                }); 
-                return data; 
-            }, [filteredTasks]);
-
-            useEffect(() => {
-                document.documentElement.style.setProperty('--col-width-check', `${colWidths.check}px`);
-                document.documentElement.style.setProperty('--col-width-actions', `${colWidths.actions}px`);
-                document.documentElement.style.setProperty('--col-width-admin', `${colWidths.admin}px`);
-                document.documentElement.style.setProperty('--col-width-task', `${colWidths.task}px`);
-            }, [colWidths]);
-
-            if (!db) return ( <div className="h-screen flex items-center justify-center bg-slate-50 p-6"><div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg"><h2 className="text-2xl font-black text-slate-900 mb-2">Đang tải...</h2></div></div> );
-
-            return (
-                <div className="flex font-sans h-full flex-col">
-                    {isAiLoading && (<div className="fixed inset-0 z-[20000] bg-white/60 backdrop-blur-sm flex items-center justify-center flex-col gap-4"><div className="animate-spin text-indigo-600"><RefreshCw size={48}/></div><p className="font-black text-indigo-950 uppercase text-sm animate-pulse">✨ AI đang xử lý...</p></div>)}
-                    <DeleteModal isOpen={deleteModal.open} count={deleteModal.ids.length} onCancel={() => setDeleteModal({ open: false, ids: [] })} onConfirm={confirmBulkDelete} />
-                    {mockModalOpen && <MockDataModal isOpen={mockModalOpen} onClose={() => setMockModalOpen(false)} onGenerate={generateMockData} />}
-                    {toast && <Toast message={toast.message} onUndo={toast.undoable ? handleUndo : undefined} onClose={() => setToast(null)} />}
-                    
-                    {/* SIDEBAR & OVERLAY */}
-                    {isMobile && sidebarOpen && (
-                        <div className="fixed inset-0 bg-black/50 z-[90] animate-in fade-in" onClick={() => setSidebarOpen(false)}></div>
-                    )}
-                    <aside 
-                        className={`
-                            fixed inset-y-0 left-0 z-[100] 
-                            w-64 bg-[#0F172A] text-white shadow-2xl
-                            transform transition-transform duration-300 ease-in-out
-                            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                            lg:translate-x-0
-                        `}
-                    >
-                        <div className="p-8 border-b border-slate-800 flex items-center justify-between overflow-hidden">
-                            <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div>
-                                <h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.20</span></h1>
-                            </div>
-                            {isMobile && <button onClick={() => setSidebarOpen(false)} className="text-slate-400"><X size={24}/></button>}
-                        </div>
-                        <nav className="p-4 flex-1 space-y-1">
-                            {[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (
-                                <button 
-                                    key={tab.id} 
-                                    onClick={() => { 
-                                        setActiveTab(tab.id); 
-                                        if(isMobile) setSidebarOpen(false); 
-                                    }} 
-                                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-                                >
-                                    <tab.icon size={18} className="flex-shrink-0"/>
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </nav>
-                        <div className="p-4 border-t border-slate-800">
-                            <button onClick={() => setMockModalOpen(true)} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all">
-                                <Database size={12}/> Dữ liệu mẫu
-                            </button>
-                        </div>
-                    </aside>
-
-                    {/* MAIN CONTENT */}
-                    <main 
-                        className={`
-                            flex-1 p-4 lg:p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F1F5F9]
-                            transition-all duration-300 ease-in-out
-                            ${sidebarOpen && !isMobile ? 'lg:ml-64' : 'lg:ml-0'}
-                        `}
-                    >
-                        <div className="flex-none flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 sticky top-0 bg-[#F1F5F9] z-[30] pb-2">
-                            <div className="flex items-center gap-4">
-                                <button 
-                                    onClick={() => {
-                                        // Chỉ toggle sidebar khi ở chế độ mobile
-                                        if (isMobile) {
-                                            setSidebarOpen(!sidebarOpen);
-                                        }
-                                    }}
-                                    className="p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-indigo-600 border border-slate-200 transition-all"
-                                >
-                                    {sidebarOpen ? <ChevronLeft size={20}/> : <Menu size={20}/>}
-                                </button>
-                                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase">
-                                    {activeTab === 'dashboard' ? 'Thống kê' : activeTab === 'list' ? 'Danh sách' : 'Tạo việc'}
-                                </h2>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                                <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2 h-10 flex-1 md:flex-none">
-                                    <div className="px-2 text-indigo-600"><Building2 size={16}/></div>
-                                    <select className="text-xs font-bold text-slate-600 outline-none bg-transparent border-none w-full md:w-40" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}>
-                                        <option value="">Đơn vị</option>
-                                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                                    </select>
-                                </div>
-                                <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2 h-10 flex-1 md:flex-none">
-                                    <div className="px-2 text-indigo-600"><Calendar size={16}/></div>
-                                    <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent w-full" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} />
-                                    <span className="text-slate-300">-</span>
-                                    <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent w-full" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} />
-                                </div>
-                                {(globalFilters.dateStart || globalFilters.dateEnd || globalFilters.unit) && 
-                                    <button onClick={() => setGlobalFilters({dateStart:'', dateEnd:'', unit:'', category:''})} className="p-2.5 bg-rose-50 rounded-xl text-rose-500 hover:bg-rose-100 transition-colors">
-                                        <X size={16}/>
-                                    </button>
-                                }
-                            </div>
-                        </div>
-
-                        {activeTab === 'dashboard' && (
-                           <div className="space-y-6 md:space-y-10 animate-in fade-in pb-20">
-                              {/* ... phần dashboard giữ nguyên như code cũ của bạn ... */}
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                                  {[{ label: 'Tổng Ticket', val: filteredTasks.length, color: 'indigo', Icon: TableIcon }, 
-                                    { label: 'Hoàn thành', val: filteredTasks.filter(t => t.overallStatus === 'Hoàn thành').length, color: 'emerald', Icon: CheckCircle2 }, 
-                                    { label: 'Đang xử lý', val: filteredTasks.filter(t => t.overallStatus === 'Đang xử lý').length, color: 'amber', Icon: Clock }, 
-                                    { label: 'Chưa duyệt', val: filteredTasks.filter(t => t.paperStatus === 'Chưa duyệt').length, color: 'rose', Icon: AlertCircle }
-                                  ].map((kpi, i) => (
-                                      <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
-                                          <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-4 ${getColorClasses(kpi.color)}`}><kpi.Icon size={20}/></div>
-                                          <h4 className="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">{kpi.label}</h4>
-                                          <p className="text-3xl font-black text-slate-900">{kpi.val}</p>
-                                      </div>
-                                  ))}
-                              </div>
-
-                              {/* Giữ nguyên phần còn lại của dashboard (biểu đồ, team stats, v.v.) */}
-                              {/* ... bạn có thể copy phần còn lại của dashboard từ code gốc ... */}
-                           </div>
-                        )}
-
-                        {activeTab === 'input' && (
-                           <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom pb-20">
-                              {/* ... phần form input giữ nguyên ... */}
-                           </div>
-                        )}
-
-                        {activeTab === 'list' && (
-                           <div className="flex flex-col h-full overflow-hidden">
-                              {/* ... phần list giữ nguyên ... */}
-                           </div>
-                        )}
-                    </main>
-                </div>
-            );
-        }
-
-        const root = createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
