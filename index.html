@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.7 (Bulk & Undo)</title>
+    <title>MarCom Dashboard Pro v12.8 (Fix Excel & New Data)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -36,12 +36,12 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         
-        /* Sticky Columns with stronger borders */
+        /* Sticky Columns */
         .sticky-col-0 { position: sticky; left: 0; z-index: 45; background: white; border-right: 1px solid #cbd5e1; }
         .sticky-col-1 { position: sticky; left: var(--col-width-check, 50px); z-index: 45; background: white; border-right: 1px solid #cbd5e1; }
         .sticky-col-2 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px)); z-index: 45; background: white; border-right: 1px solid #cbd5e1; }
         .sticky-col-3 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px) + var(--col-width-admin, 140px)); z-index: 45; background: white; border-right: 1px solid #cbd5e1; }
-        .sticky-col-4 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px) + var(--col-width-admin, 140px) + var(--col-width-task, 280px)); z-index: 45; background: white; border-right: 2px solid #94a3b8; } /* Cột chốt chặn đậm hơn */
+        .sticky-col-4 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px) + var(--col-width-admin, 140px) + var(--col-width-task, 320px)); z-index: 45; background: white; border-right: 2px solid #94a3b8; }
 
         .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 80; touch-action: none; }
         .resizer:hover { background: #6366f1; opacity: 0.5; }
@@ -90,12 +90,13 @@
 
         const GEMINI_MODEL = "gemini-2.0-flash-exp";
 
-        // --- HELPER: XỬ LÝ NGÀY TỪ EXCEL ---
+        // --- HELPER: XỬ LÝ NGÀY TỪ EXCEL (ĐÃ SỬA LỖI Math.UTC -> Date.UTC) ---
         const processExcelDate = (input) => {
             if (!input) return "";
             // Trường hợp 1: Excel Serial Number (vd: 45300)
             if (typeof input === 'number') {
-                const date = new Date(Math.UTC(1899, 11, 30));
+                // SỬA LỖI Ở ĐÂY: Dùng Date.UTC thay vì Math.UTC
+                const date = new Date(Date.UTC(1899, 11, 30)); 
                 date.setDate(date.getDate() + input);
                 return date.toISOString().split('T')[0];
             }
@@ -104,20 +105,36 @@
                 const parts = input.split('/');
                 if (parts.length === 3) {
                     // Đảo từ dd/mm/yyyy -> yyyy-mm-dd
-                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    // Thêm số 0 nếu ngày/tháng < 10 để chuẩn ISO
+                    const day = parts[0].padStart(2, '0');
+                    const month = parts[1].padStart(2, '0');
+                    const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2]; // Xử lý năm 26 -> 2026
+                    return `${year}-${month}-${day}`;
                 }
             }
             // Trường hợp 3: Đã đúng chuẩn yyyy-mm-dd hoặc định dạng khác
             return input;
         };
 
-        // --- DATA ---
-        const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom" ];
-        const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
-        const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "N/A"];
-        const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại"];
-        const TASK_STATUS = ["Không", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại"];
-        const STATUS_COLOR_MAP = { "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", "Gác lại": "#f59e0b", "Không": "#cbd5e1" };
+        // --- DATA CONSTANTS (Đã cập nhật theo yêu cầu của bạn) ---
+        const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
+        const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác", "Hậu cần", "Quay chụp", "Content", "Quay dựng", "Livestream", "Quà tặng", "Thiết kế ấn phẩm"];
+        
+        // Cập nhật trạng thái mới từ dữ liệu mẫu
+        const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
+        const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện", "Chờ duyệt", "Gấp"];
+        const TASK_STATUS = ["Không", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện"];
+        
+        const STATUS_COLOR_MAP = { 
+            "Chưa bắt đầu": "#94a3b8", 
+            "Đang xử lý": "#6366f1", 
+            "Hoàn thành": "#10b981", 
+            "Gác lại": "#f59e0b", 
+            "Không": "#cbd5e1",
+            "Đang thực hiện": "#3b82f6", // Xanh dương đậm
+            "Chờ duyệt": "#a855f7", // Tím
+            "Gấp": "#ef4444" // Đỏ
+        };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
         // --- COMPONENTS ---
@@ -131,14 +148,13 @@
             return (
                 <div className="relative" ref={containerRef}>
                     <div onClick={handleOpen} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
-                        <div className="flex flex-wrap gap-0.5">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-50 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-100">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
+                        <div className="flex flex-wrap gap-0.5">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-50 text-indigo-700 text-[8px] px-1.5 py-0.5 rounded font-bold border border-indigo-100">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
                     {isOpen && (<div className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10" style={{ top: coords.top + 5, left: coords.left, width: Math.max(coords.width, 220) }}>{options.map(option => (<div key={option} onClick={(e) => { e.stopPropagation(); toggleOption(option); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer"><div className={`w-4 h-4 rounded border flex items-center justify-center ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>{selected.includes(option) && <Check size={10} className="text-white font-bold"/>}</div><span className={`text-xs ${selected.includes(option) ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>{option}</span></div>))}</div>)}
                 </div>
             );
         };
 
-        // Toast Component cho Undo
         const Toast = ({ message, onUndo, onClose }) => (
             <div className="fixed bottom-6 right-6 z-[10000] bg-slate-900 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom duration-300">
                 <div className="flex flex-col"><span className="font-bold text-sm">Thông báo</span><span className="text-xs text-slate-300">{message}</span></div>
@@ -147,7 +163,6 @@
             </div>
         );
 
-        // Delete Modal
         const DeleteModal = ({ isOpen, onConfirm, onCancel, count }) => {
             if (!isOpen) return null;
             return (
@@ -180,11 +195,9 @@
             const [deleteModal, setDeleteModal] = useState({ open: false, ids: [] });
             const [isAiLoading, setIsAiLoading] = useState(false);
             const [aiAnalysis, setAiAnalysis] = useState("");
-            
-            // Bulk Selection State
             const [selectedIds, setSelectedIds] = useState([]);
             const [toast, setToast] = useState(null);
-            const deletedDataRef = useRef([]); // Lưu trữ dữ liệu tạm để Undo
+            const deletedDataRef = useRef([]);
 
             const [colWidths, setColWidths] = useState({ check: 50, actions: 60, admin: 140, task: 320, overall: 160, unit: 180, brand: 350, operation: 350, media: 350 });
             const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
@@ -193,7 +206,6 @@
             const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
             const [formData, setFormData] = useState(emptyFormData);
 
-            // Hàm Scope
             const getColorClasses = (color) => { 
                 const map = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', rose: 'bg-rose-50 text-rose-600', amber: 'bg-amber-50 text-amber-600', blue: 'bg-blue-50 text-blue-600' }; 
                 return map[color] || 'bg-slate-50 text-slate-600'; 
@@ -218,42 +230,21 @@
             const debouncedUpdate = useCallback(_.debounce(async (id, data) => { if(!db) return; try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } catch (e) { console.error(e); } }, 800), []);
             const handleUpdateTask = (id, updatedData) => { setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t)); debouncedUpdate(id, updatedData); };
 
-            // --- BULK DELETE & UNDO LOGIC ---
-            const handleSelectRow = (id) => {
-                setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-            };
-
-            const handleSelectAll = (filteredData) => {
-                if (selectedIds.length === filteredData.length) setSelectedIds([]);
-                else setSelectedIds(filteredData.map(t => t.id));
-            };
+            const handleSelectRow = (id) => { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); };
+            const handleSelectAll = (filteredData) => { if (selectedIds.length === filteredData.length) setSelectedIds([]); else setSelectedIds(filteredData.map(t => t.id)); };
 
             const confirmBulkDelete = async () => {
                 if (!db || deleteModal.ids.length === 0) return;
                 try {
-                    // 1. Lưu dữ liệu trước khi xóa để Undo
                     const itemsToDelete = tasks.filter(t => deleteModal.ids.includes(t.id));
-                    deletedDataRef.current = itemsToDelete; // Lưu vào ref
-
-                    // 2. Thực hiện xóa (Batch)
+                    deletedDataRef.current = itemsToDelete;
                     const batch = writeBatch(db);
-                    deleteModal.ids.forEach(id => {
-                        const ref = doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id);
-                        batch.delete(ref);
-                    });
+                    deleteModal.ids.forEach(id => { const ref = doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id); batch.delete(ref); });
                     await batch.commit();
-
-                    // 3. Reset UI & Show Toast
                     setSelectedIds([]);
                     setDeleteModal({ open: false, ids: [] });
-                    setToast({ 
-                        message: `Đã xóa ${itemsToDelete.length} dòng dữ liệu.`, 
-                        undoable: true 
-                    });
-                    
-                    // Auto hide toast
+                    setToast({ message: `Đã xóa ${itemsToDelete.length} dòng dữ liệu.`, undoable: true });
                     setTimeout(() => setToast(null), 8000);
-
                 } catch (e) { alert("Lỗi xóa: " + e.message); }
             };
 
@@ -261,11 +252,7 @@
                 if (!deletedDataRef.current.length) return;
                 try {
                     const batch = writeBatch(db);
-                    deletedDataRef.current.forEach(item => {
-                        // Khôi phục lại với ID cũ nếu có thể, hoặc tạo mới với data cũ
-                        const ref = doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', item.id);
-                        batch.set(ref, item);
-                    });
+                    deletedDataRef.current.forEach(item => { const ref = doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', item.id); batch.set(ref, item); });
                     await batch.commit();
                     setToast({ message: "Đã hoàn tác dữ liệu thành công!", undoable: false });
                     setTimeout(() => setToast(null), 3000);
@@ -273,12 +260,51 @@
                 } catch (e) { alert("Lỗi hoàn tác: " + e.message); }
             };
 
+            // FIX: CẬP NHẬT DỮ LIỆU MẪU THEO YÊU CẦU
             const createMockData = async () => {
                 if(!db) return;
+                const batch = writeBatch(db);
                 try {
-                    const mock = [{ ...emptyFormData, taskName: "Thiết kế Profile Khoa Cơ khí", unit: "K. Công nghệ thông tin", overallStatus: "Đang xử lý", orderDate: "2026-01-05", categories: ["Thiết kế"], brandTask: { ...emptyFormData.brandTask, deadline: "2026-01-10", status: "Đang xử lý" } }];
-                    for (const t of mock) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { ...t, createdAt: serverTimestamp() });
-                    alert("Đã khởi tạo dữ liệu mẫu!");
+                    const mockData = [
+                        {
+                            orderDate: "2026-01-05", paperStatus: "Đã duyệt", taskName: "Lễ ký kết MOU Đại học Busan", overallStatus: "Đang thực hiện", unit: "Hợp tác quốc tế", categories: ["Thiết kế", "Hậu cần", "Quay chụp"],
+                            brandTask: { name: "Thiết kế Backdrop & Standee", deadline: "2026-01-12", status: "Đang xử lý", link: "" },
+                            operationTask: { name: "Setup hội trường & Teabreak", deadline: "2026-01-14", status: "Chưa bắt đầu", link: "" },
+                            mediaTask: { name: "Chụp ảnh sự kiện", deadline: "2026-01-15", status: "Chưa bắt đầu", link: "" }
+                        },
+                        {
+                            orderDate: "2026-01-06", paperStatus: "Chưa duyệt", taskName: "Workshop \"Sắc màu Trung Hoa\"", overallStatus: "Chờ duyệt", unit: "Bộ môn Trung", categories: ["Content", "Quay dựng"],
+                            brandTask: { name: "Viết bài PR & Đăng tuyển", deadline: "2026-01-09", status: "Hoàn thành", link: "" },
+                            operationTask: { name: "Không", deadline: "", status: "Không", link: "" },
+                            mediaTask: { name: "Quay video recap", deadline: "2026-01-20", status: "Chưa bắt đầu", link: "" }
+                        },
+                        {
+                            orderDate: "2026-01-08", paperStatus: "Đã duyệt", taskName: "Chung kết Hùng biện Tiếng Anh", overallStatus: "Đang thực hiện", unit: "Tiếng Anh", categories: ["Hậu cần", "Livestream"],
+                            brandTask: { name: "Không", deadline: "", status: "Không", link: "" },
+                            operationTask: { name: "Chuẩn bị sân khấu & Âm thanh", deadline: "2026-01-25", status: "Đang xử lý", link: "" },
+                            mediaTask: { name: "Livestream Fanpage", deadline: "2026-01-25", status: "Đang xử lý", link: "" }
+                        },
+                        {
+                            orderDate: "2026-01-09", paperStatus: "Nợ tờ trình", taskName: "Tiếp đón đoàn đại biểu Úc", overallStatus: "Gấp", unit: "Hợp tác quốc tế", categories: ["Quà tặng"],
+                            brandTask: { name: "Không", deadline: "", status: "Không", link: "" },
+                            operationTask: { name: "Mua quà lưu niệm & Hoa", deadline: "2026-01-11", status: "Đang xử lý", link: "" },
+                            mediaTask: { name: "Không", deadline: "", status: "Không", link: "" }
+                        },
+                        {
+                            orderDate: "2026-01-10", paperStatus: "Đã duyệt", taskName: "Tuần lễ văn hóa Á Đông", overallStatus: "Chưa bắt đầu", unit: "Bộ môn Trung", categories: ["Thiết kế ấn phẩm"],
+                            brandTask: { name: "Thiết kế bộ Merch (Áo, Mũ)", deadline: "2026-02-01", status: "Chưa bắt đầu", link: "" },
+                            operationTask: { name: "Không", deadline: "", status: "Không", link: "" },
+                            mediaTask: { name: "Không", deadline: "", status: "Không", link: "" }
+                        }
+                    ];
+
+                    mockData.forEach(item => {
+                        const newRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'));
+                        batch.set(newRef, { ...item, createdAt: serverTimestamp() });
+                    });
+
+                    await batch.commit();
+                    alert("Đã khởi tạo 5 dòng dữ liệu mẫu thành công!");
                 } catch (e) { alert("Lỗi: " + e.message); }
             };
 
@@ -295,7 +321,6 @@
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tasks"); XLSX.writeFile(wb, "MarCom_Hub_Template_Final.xlsx"); 
             };
 
-            // FIX: Hàm upload đã dùng processExcelDate
             const handleFileUpload = (e) => {
                 if (!window.XLSX || !db) return; 
                 const file = e.target.files[0]; if (!file) return;
@@ -306,9 +331,8 @@
                         const wb = XLSX.read(bstr, { type: 'binary' }); 
                         const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                         let count = 0;
-                        const batch = writeBatch(db); // Dùng batch cho nhanh
+                        const batch = writeBatch(db);
                         
-                        // Limit batch size (500) - Chia nhỏ nếu cần, ở đây làm đơn giản
                         for (const row of data.slice(0, 490)) { 
                             const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'));
                             batch.set(newDocRef, { 
@@ -321,19 +345,19 @@
                                 categories: row["Categories"] ? row["Categories"].split(',').map(s => s.trim()) : [],
                                 brandTask: {
                                     name: row["BrandTaskName"] || "",
-                                    deadline: processExcelDate(row["BrandDeadline"]) || "", // Xử lý ngày ở đây
+                                    deadline: processExcelDate(row["BrandDeadline"]) || "",
                                     status: row["BrandStatus"] || "Chưa bắt đầu",
                                     link: ""
                                 },
                                 operationTask: {
                                     name: row["OperationTaskName"] || "",
-                                    deadline: processExcelDate(row["OperationDeadline"]) || "", // Xử lý ngày ở đây
+                                    deadline: processExcelDate(row["OperationDeadline"]) || "",
                                     status: row["OperationStatus"] || "Chưa bắt đầu",
                                     link: ""
                                 },
                                 mediaTask: {
                                     name: row["MediaTaskName"] || "",
-                                    deadline: processExcelDate(row["MediaDeadline"]) || "", // Xử lý ngày ở đây
+                                    deadline: processExcelDate(row["MediaDeadline"]) || "",
                                     status: row["MediaStatus"] || "Chưa bắt đầu",
                                     link: ""
                                 }
@@ -389,7 +413,7 @@
                     {toast && <Toast message={toast.message} onUndo={toast.undoable ? handleUndo : undefined} onClose={() => setToast(null)} />}
                     
                     <aside className="w-64 bg-[#0F172A] fixed h-full flex flex-col z-[100] text-white shadow-2xl">
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.7</span></h1></div>
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.8</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18}/> {tab.label}</button>))}</nav>
                         <div className="p-4 border-t border-slate-800"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu mẫu</button></div>
                     </aside>
