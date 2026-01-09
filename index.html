@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.6 (UI Enhanced)</title>
+    <title>MarCom Dashboard Pro v12.6 (Fixed Excel & Render)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -31,9 +31,7 @@
     </script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
-        
-        /* Custom Scrollbar */
+        body { font-family: 'Inter', sans-serif; }
         .custom-scrollbar::-webkit-scrollbar { height: 10px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -47,20 +45,12 @@
         .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 80; touch-action: none; }
         .resizer:hover { background: #6366f1; opacity: 0.3; }
         
-        /* Animations */
-        .animate-in { animation: fadeIn 0.4s ease-out forwards; }
-        .slide-up { animation: slideUp 0.4s ease-out forwards; }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-in { animation-duration: 0.3s; animation-fill-mode: both; }
+        .fade-in { animation-name: fadeIn; }
+        .slide-in-from-bottom { animation-name: slideInFromBottom; }
 
-        /* Hover Effects for Table Rows */
-        tr.task-row { transition: all 0.2s ease-in-out; }
-        tr.task-row:hover { background-color: #f8fafc; transform: scale-[1.002]; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); z-index: 40; position: relative; }
-        
-        /* Smooth inputs */
-        input, select { transition: all 0.2s; }
-        input:focus, select:focus { transform: translateY(-1px); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInFromBottom { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body class="bg-[#F8FAFC] text-slate-800 h-screen overflow-hidden">
@@ -72,7 +62,7 @@
         import { initializeApp } from 'firebase/app';
         import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc } from 'firebase/firestore';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, FileText } from 'lucide-react';
+        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw } from 'lucide-react';
         import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
         // --- CONFIG ---
@@ -95,7 +85,7 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
             }
-        } catch (e) { console.error("Firebase Init Error:", e); }
+        } catch (e) { console.error("Firebase Init Error:", e); alert("Lỗi kết nối Firebase: " + e.message); }
 
         const GEMINI_MODEL = "gemini-2.0-flash-exp";
 
@@ -121,14 +111,18 @@
                 }
                 setIsOpen(!isOpen);
             };
-            useEffect(() => { const close = () => setIsOpen(false); if (isOpen) { document.addEventListener("mousedown", close); window.addEventListener("scroll", close); } return () => { document.removeEventListener("mousedown", close); window.removeEventListener("scroll", close); }; }, [isOpen]);
+            useEffect(() => {
+                const close = () => setIsOpen(false);
+                if (isOpen) { document.addEventListener("mousedown", close); window.addEventListener("scroll", close); }
+                return () => { document.removeEventListener("mousedown", close); window.removeEventListener("scroll", close); };
+            }, [isOpen]);
             const toggleOption = (option) => { const newSelected = selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]; onChange(newSelected); };
             return (
                 <div className="relative" ref={containerRef}>
-                    <div onClick={handleOpen} className={`w-full px-2 py-1.5 rounded border border-slate-200 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-400 hover:shadow-sm transition-all ${inline ? 'text-[9px] min-h-[28px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
+                    <div onClick={handleOpen} className={`w-full px-2 py-1.5 rounded border border-slate-200 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-400 transition-all ${inline ? 'text-[9px] min-h-[28px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
                         <div className="flex flex-wrap gap-0.5">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-50 text-indigo-700 text-[8px] px-1.5 py-0.5 rounded font-bold border border-indigo-100">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
-                    {isOpen && (<div className="fixed z-[9999] bg-white border border-slate-100 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10 animate-in" style={{ top: coords.top + 5, left: coords.left, width: Math.max(coords.width, 220) }}>{options.map(option => (<div key={option} onClick={(e) => { e.stopPropagation(); toggleOption(option); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer"><div className={`w-4 h-4 rounded border flex items-center justify-center ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-200'}`}>{selected.includes(option) && <Check size={10} className="text-white font-bold"/>}</div><span className={`text-xs ${selected.includes(option) ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>{option}</span></div>))}</div>)}
+                    {isOpen && (<div className="fixed z-[9999] bg-white border border-slate-100 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10" style={{ top: coords.top + 5, left: coords.left, width: Math.max(coords.width, 220) }}>{options.map(option => (<div key={option} onClick={(e) => { e.stopPropagation(); toggleOption(option); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer"><div className={`w-4 h-4 rounded border flex items-center justify-center ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-200'}`}>{selected.includes(option) && <Check size={10} className="text-white font-bold"/>}</div><span className={`text-xs ${selected.includes(option) ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>{option}</span></div>))}</div>)}
                 </div>
             );
         };
@@ -136,12 +130,12 @@
         const DeleteModal = ({ isOpen, onConfirm, onCancel, taskName }) => {
             if (!isOpen) return null;
             return (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-10 text-center space-y-6 slide-up">
-                        <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-2 animate-bounce"><AlertCircle size={32}/></div>
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-10 text-center space-y-6">
+                        <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-2"><AlertCircle size={32}/></div>
                         <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Xác nhận xóa?</h3>
                         <p className="text-slate-500 text-sm italic leading-relaxed">Ticket <br/><span className="font-bold text-slate-800">"{taskName}"</span> <br/>sẽ bị xóa vĩnh viễn khỏi hệ thống.</p>
-                        <div className="flex gap-4 pt-4"><button onClick={onCancel} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 hover:shadow-md transition-all">Hủy</button><button onClick={onConfirm} className="flex-1 py-3 bg-rose-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-100 hover:bg-rose-700 hover:shadow-xl hover:-translate-y-1 transition-all">Xóa</button></div>
+                        <div className="flex gap-4 pt-4"><button onClick={onCancel} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-colors">Hủy</button><button onClick={onConfirm} className="flex-1 py-3 bg-rose-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-100 hover:bg-rose-700 transition-colors">Xóa</button></div>
                     </div>
                 </div>
             );
@@ -173,8 +167,23 @@
             const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
             const [formData, setFormData] = useState(emptyFormData);
 
-            useEffect(() => { if (!auth) return; signInAnonymously(auth).catch(e => { console.error("Auth Error", e); alert("Lỗi đăng nhập: " + e.message); }); return onAuthStateChanged(auth, setUser); }, []);
+            // FIX 1: Chuyển hàm getColorClasses vào trong App để tránh lỗi ReferenceError
+            const getColorClasses = (color) => { 
+                const map = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', rose: 'bg-rose-50 text-rose-600', amber: 'bg-amber-50 text-amber-600', blue: 'bg-blue-50 text-blue-600' }; 
+                return map[color] || 'bg-slate-50 text-slate-600'; 
+            };
 
+            // AUTH
+            useEffect(() => { 
+                if (!auth) return; 
+                signInAnonymously(auth).catch(e => {
+                    console.error("Auth Error", e);
+                    alert("Lỗi đăng nhập Firebase: " + e.message);
+                }); 
+                return onAuthStateChanged(auth, setUser); 
+            }, []);
+
+            // SYNC DATA
             useEffect(() => {
                 if (!user || !db) return;
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks');
@@ -184,25 +193,28 @@
                 }, (err) => console.error("Snapshot Error:", err));
             }, [user]);
 
+            // CRUD HANDLERS
             const handleAddTask = async (e) => {
                 e.preventDefault(); if(!db) return alert("Chưa kết nối Database!");
                 try { 
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { ...formData, createdAt: serverTimestamp() }); 
-                    setFormData(emptyFormData); setActiveTab('list'); alert("Tạo ticket thành công!");
-                } catch (e) { console.error(e); alert("Lỗi tạo ticket: " + e.message); }
+                    setFormData(emptyFormData); 
+                    setActiveTab('list'); 
+                    alert("Tạo ticket thành công!");
+                } catch (e) { alert("Lỗi khi tạo: " + e.message); }
             };
 
             const debouncedUpdate = useCallback(_.debounce(async (id, data) => { if(!db) return; try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } catch (e) { console.error(e); } }, 800), []);
             const handleUpdateTask = (id, updatedData) => { setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t)); debouncedUpdate(id, updatedData); };
-            const confirmDelete = async () => { if (!deleteModal.taskId || !db) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', deleteModal.taskId)); setDeleteModal({ open: false, taskId: null, taskName: '' }); } catch (e) { console.error(e); alert("Lỗi xóa: " + e.message); } };
+            const confirmDelete = async () => { if (!deleteModal.taskId || !db) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', deleteModal.taskId)); setDeleteModal({ open: false, taskId: null, taskName: '' }); } catch (e) { alert("Lỗi khi xóa: " + e.message); } };
 
             const createMockData = async () => {
                 if(!db) return alert("Chưa kết nối Database!");
                 try {
                     const mock = [{ ...emptyFormData, taskName: "Thiết kế Profile Khoa Cơ khí", unit: "K. Công nghệ thông tin", overallStatus: "Đang xử lý", orderDate: "2026-01-05", categories: ["Thiết kế"], brandTask: { ...emptyFormData.brandTask, deadline: "2026-01-10", status: "Đang xử lý" } }];
                     for (const t of mock) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { ...t, createdAt: serverTimestamp() });
-                    alert("Đã khởi tạo dữ liệu mẫu thành công!");
-                } catch (e) { console.error(e); alert("Lỗi khởi tạo: " + e.message); }
+                    alert("Đã khởi tạo dữ liệu mẫu!");
+                } catch (e) { alert("Lỗi tạo mẫu: " + e.message); }
             };
 
             const handleResize = (key, startX, startWidth) => {
@@ -211,43 +223,85 @@
                 document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
             };
 
+            // FIX 2: Cập nhật Tên cột Excel đơn giản hơn để tránh lỗi sai format
             const downloadTemplate = () => { 
                 if (!window.XLSX) return; 
-                const data = [{ "Ngày Order (YYYY-MM-DD)": "2026-01-07", "Tờ trình": "Chưa duyệt", "Tên Task Chung": "Tên sự kiện mẫu...", "Hoàn thành tổng": "Chưa bắt đầu", "Đơn vị": "Văn phòng trường", "Phân loại (cách nhau dấu phẩy)": "Thiết kế, Duyệt thiết kế", "Brand - Tên Task": "Viết content...", "Brand - Deadline (YYYY-MM-DD)": "2026-01-10", "Brand - Trạng thái": "Đang xử lý", "Operation - Tên Task": "", "Operation - Deadline": "", "Operation - Trạng thái": "Không", "Media - Tên Task": "", "Media - Deadline": "", "Media - Trạng thái": "Không" }];
-                const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tasks"); XLSX.writeFile(wb, "MarCom_Hub_Template_Full.xlsx"); 
+                const data = [{
+                    "OrderDate": "2026-01-07",
+                    "PaperStatus": "Chưa duyệt",
+                    "TaskName": "Tên sự kiện mẫu...",
+                    "OverallStatus": "Chưa bắt đầu",
+                    "Unit": "Văn phòng trường",
+                    "Categories": "Thiết kế, Duyệt thiết kế",
+                    "BrandTaskName": "Viết content...",
+                    "BrandDeadline": "2026-01-10",
+                    "BrandStatus": "Đang xử lý",
+                    "OperationTaskName": "",
+                    "OperationDeadline": "",
+                    "OperationStatus": "Không",
+                    "MediaTaskName": "",
+                    "MediaDeadline": "",
+                    "MediaStatus": "Không"
+                }];
+                const ws = XLSX.utils.json_to_sheet(data); 
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tasks"); XLSX.writeFile(wb, "MarCom_Hub_Template_Fix.xlsx"); 
             };
 
+            // FIX 3: Cập nhật hàm Upload để đọc đúng các cột mới (tương ứng với hàm download)
             const handleFileUpload = (e) => {
                 if (!window.XLSX || !db) return; 
                 const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader(); 
                 reader.onload = async (evt) => {
                     try {
-                        const bstr = evt.target.result; const wb = XLSX.read(bstr, { type: 'binary' }); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                        const bstr = evt.target.result; 
+                        const wb = XLSX.read(bstr, { type: 'binary' }); 
+                        const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                         let count = 0;
                         for (const row of data) { 
                             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { 
                                 ...emptyFormData, 
-                                orderDate: row["Ngày Order (YYYY-MM-DD)"] || new Date().toISOString().split('T')[0], 
-                                paperStatus: row["Tờ trình"] || "Chưa duyệt", 
-                                taskName: row["Tên Task Chung"] || "Không tên", 
-                                overallStatus: row["Hoàn thành tổng"] || "Chưa bắt đầu", 
-                                unit: row["Đơn vị"] || "Toàn trường", 
-                                categories: row["Phân loại (cách nhau dấu phẩy)"] ? row["Phân loại (cách nhau dấu phẩy)"].split(',').map(s => s.trim()) : [],
-                                brandTask: { name: row["Brand - Tên Task"] || "", deadline: row["Brand - Deadline (YYYY-MM-DD)"] || "", status: row["Brand - Trạng thái"] || "Chưa bắt đầu", link: "" },
-                                operationTask: { name: row["Operation - Tên Task"] || "", deadline: row["Operation - Deadline"] || "", status: row["Operation - Trạng thái"] || "Chưa bắt đầu", link: "" },
-                                mediaTask: { name: row["Media - Tên Task"] || "", deadline: row["Media - Deadline"] || "", status: row["Media - Trạng thái"] || "Chưa bắt đầu", link: "" }
+                                orderDate: row["OrderDate"] || new Date().toISOString().split('T')[0], 
+                                paperStatus: row["PaperStatus"] || "Chưa duyệt", 
+                                taskName: row["TaskName"] || "Không tên", 
+                                overallStatus: row["OverallStatus"] || "Chưa bắt đầu", 
+                                unit: row["Unit"] || "Toàn trường", 
+                                categories: row["Categories"] ? row["Categories"].split(',').map(s => s.trim()) : [],
+                                brandTask: {
+                                    name: row["BrandTaskName"] || "",
+                                    deadline: row["BrandDeadline"] || "",
+                                    status: row["BrandStatus"] || "Chưa bắt đầu",
+                                    link: ""
+                                },
+                                operationTask: {
+                                    name: row["OperationTaskName"] || "",
+                                    deadline: row["OperationDeadline"] || "",
+                                    status: row["OperationStatus"] || "Chưa bắt đầu",
+                                    link: ""
+                                },
+                                mediaTask: {
+                                    name: row["MediaTaskName"] || "",
+                                    deadline: row["MediaDeadline"] || "",
+                                    status: row["MediaStatus"] || "Chưa bắt đầu",
+                                    link: ""
+                                }
                             }); 
                             count++;
                         }
-                        alert(`Đã nhập thành công ${count} dòng!`); setActiveTab('list');
-                    } catch (err) { console.error(err); alert("Lỗi upload: " + err.message); }
+                        alert(`Đã nhập thành công ${count} dòng dữ liệu!`); setActiveTab('list');
+                    } catch (err) {
+                        console.error(err);
+                        alert("Lỗi Upload: " + err.message);
+                    }
                 }; reader.readAsBinaryString(file); e.target.value = null;
             };
 
             const handleAiOptimize = async () => {
                 if (!formData.taskName) return; setIsAiLoading(true);
-                try { const res = await callGemini({ contents: [{ parts: [{ text: `Task: ${formData.taskName}` }] }], systemInstruction: { parts: [{ text: `You are a MarCom expert. Suggest a professional Vietnamese title and categories: ${CATEGORIES.join(', ')}. JSON format: { "title": "...", "cats": ["..."] }` }] }, generationConfig: { responseMimeType: "application/json" } }); const data = JSON.parse(res.candidates[0].content.parts[0].text); setFormData(p => ({ ...p, taskName: data.title, categories: data.cats })); } catch (e) { console.error(e); } finally { setIsAiLoading(false); }
+                try {
+                    const res = await callGemini({ contents: [{ parts: [{ text: `Task: ${formData.taskName}` }] }], systemInstruction: { parts: [{ text: `You are a MarCom expert. Suggest a professional Vietnamese title and categories: ${CATEGORIES.join(', ')}. JSON format: { "title": "...", "cats": ["..."] }` }] }, generationConfig: { responseMimeType: "application/json" } });
+                    const data = JSON.parse(res.candidates[0].content.parts[0].text); setFormData(p => ({ ...p, taskName: data.title, categories: data.cats }));
+                } catch (e) { console.error(e); } finally { setIsAiLoading(false); }
             };
 
             const handleAiAnalysis = async () => {
@@ -275,33 +329,36 @@
                 document.documentElement.style.setProperty('--col-width-task', `${colWidths.task}px`);
             }, [colWidths]);
 
-            if (!db) return ( <div className="h-screen flex items-center justify-center bg-slate-50 p-6"><div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg slide-up"><div className="mx-auto w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4"><Database size={32}/></div><h2 className="text-2xl font-black text-slate-900 mb-2">Chưa kết nối Firebase</h2><p className="text-slate-500 mb-6">Vui lòng kiểm tra lại cấu hình Firebase.</p><a href="https://console.firebase.google.com/" target="_blank" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">Đến Firebase Console</a></div></div> );
+            if (!db) return ( <div className="h-screen flex items-center justify-center bg-slate-50 p-6"><div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg"><div className="mx-auto w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4"><Database size={32}/></div><h2 className="text-2xl font-black text-slate-900 mb-2">Chưa kết nối Firebase</h2><p className="text-slate-500 mb-6">Vui lòng kiểm tra lại cấu hình Firebase.</p><a href="https://console.firebase.google.com/" target="_blank" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">Đến Firebase Console</a></div></div> );
 
             return (
                 <div className="flex font-sans h-full">
-                    {isAiLoading && (<div className="fixed inset-0 z-[20000] bg-white/60 backdrop-blur-sm flex items-center justify-center flex-col gap-4 animate-in"><div className="animate-spin text-indigo-600"><RefreshCw size={48}/></div><p className="font-black text-indigo-950 uppercase tracking-widest text-sm animate-pulse">✨ Trí tuệ nhân tạo đang xử lý...</p></div>)}
+                    {isAiLoading && (<div className="fixed inset-0 z-[20000] bg-white/60 backdrop-blur-sm flex items-center justify-center flex-col gap-4"><div className="animate-spin text-indigo-600"><RefreshCw size={48}/></div><p className="font-black text-indigo-950 uppercase tracking-widest text-sm animate-pulse">✨ Trí tuệ nhân tạo đang xử lý...</p></div>)}
                     <DeleteModal isOpen={deleteModal.open} taskName={deleteModal.taskName} onCancel={() => setDeleteModal({ open: false, taskId: null, taskName: '' })} onConfirm={confirmDelete} />
                     
-                    <aside className="w-64 bg-[#0F172A] fixed h-full flex flex-col z-[100] text-white shadow-2xl transition-all">
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.6</span></h1></div>
-                        <nav className="p-4 flex-1 space-y-2">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-300 hover:scale-[1.02] ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18}/> {tab.label}</button>))}</nav>
-                        <div className="p-4 border-t border-slate-800"><button onClick={createMockData} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[10px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all hover:text-white hover:shadow-lg"><Database size={12}/> Khởi tạo dữ liệu mẫu</button></div>
+                    <aside className="w-64 bg-[#0F172A] fixed h-full flex flex-col z-[100] text-white shadow-2xl">
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12</span></h1></div>
+                        <nav className="p-4 flex-1 space-y-1">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18}/> {tab.label}</button>))}</nav>
+                        <div className="p-4 border-t border-slate-800"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu mẫu</button></div>
                     </aside>
 
                     <main className="ml-64 flex-1 p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F8FAFC]">
+                        {/* CONDITIONAL RENDERING */}
+                        
+                        {/* DASHBOARD TAB */}
                         {activeTab === 'dashboard' && (
-                           <div className="space-y-10 animate-in pb-20">
-                              <header className="flex justify-between items-end border-b border-slate-200 pb-6 slide-up"><div><h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Thống kê nghiệp vụ</h2><p className="text-slate-500 font-medium text-sm">Hệ thống giám sát hiệu suất thời gian thực.</p></div><button onClick={handleAiAnalysis} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"><Sparkles size={16}/> ✨ AI Phân tích</button></header>
-                              {aiAnalysis && <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2rem] flex gap-4 slide-up"><div className="p-3 bg-white text-indigo-600 rounded-2xl h-fit"><BrainCircuit size={24}/></div><div className="flex-1 text-sm font-medium text-indigo-900 italic leading-relaxed">{aiAnalysis}</div><button onClick={() => setAiAnalysis("")} className="text-indigo-300 hover:text-indigo-600"><X size={18}/></button></div>}
-                              <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm grid grid-cols-4 gap-6 hover:shadow-md transition-all"><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Thời gian</label><div className="flex gap-2"><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} /><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} /></div></div><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Đơn vị yêu cầu</label><select className="w-full p-2 border rounded-xl text-xs font-bold" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}><option value="">Tất cả đơn vị</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div><div className="flex items-end"><button onClick={() => setGlobalFilters({dateStart:'', dateEnd:'', unit:'', category:''})} className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200 uppercase transition-colors">Xóa bộ lọc</button></div></div>
-                              <div className="grid grid-cols-4 gap-6">{[{ label: 'Tổng Ticket', val: filteredTasks.length, color: 'indigo', Icon: TableIcon }, { label: 'Hoàn thành', val: filteredTasks.filter(t => t.overallStatus === 'Hoàn thành').length, color: 'emerald', Icon: CheckCircle2 }, { label: 'Đang xử lý', val: filteredTasks.filter(t => t.overallStatus === 'Đang xử lý').length, color: 'amber', Icon: Clock }, { label: 'Chưa duyệt', val: filteredTasks.filter(t => t.paperStatus === 'Chưa duyệt').length, color: 'rose', Icon: AlertCircle }].map((kpi, i) => (<div key={i} className="bg-white p-7 rounded-[2.5rem] border border-slate-200 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 duration-300"><div className={`w-12 h-12 flex items-center justify-center rounded-2xl mb-6 ${getColorClasses(kpi.color)}`}><kpi.Icon size={24}/></div><h4 className="text-slate-400 text-[11px] font-black uppercase mb-1 tracking-widest">{kpi.label}</h4><p className="text-4xl font-black text-slate-900">{kpi.val}</p></div>))}</div>
+                           <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+                              <header className="flex justify-between items-end border-b border-slate-200 pb-6"><div><h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Thống kê nghiệp vụ</h2><p className="text-slate-500 font-medium text-sm">Hệ thống giám sát hiệu suất thời gian thực.</p></div><button onClick={handleAiAnalysis} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"><Sparkles size={16}/> ✨ AI Phân tích</button></header>
+                              {aiAnalysis && <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2rem] flex gap-4 animate-in slide-in-from-top duration-500"><div className="p-3 bg-white text-indigo-600 rounded-2xl h-fit"><BrainCircuit size={24}/></div><div className="flex-1 text-sm font-medium text-indigo-900 italic leading-relaxed">{aiAnalysis}</div><button onClick={() => setAiAnalysis("")} className="text-indigo-300 hover:text-indigo-600"><X size={18}/></button></div>}
+                              <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm grid grid-cols-4 gap-6"><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Thời gian</label><div className="flex gap-2"><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} /><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} /></div></div><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Đơn vị yêu cầu</label><select className="w-full p-2 border rounded-xl text-xs font-bold" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}><option value="">Tất cả đơn vị</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div><div className="flex items-end"><button onClick={() => setGlobalFilters({dateStart:'', dateEnd:'', unit:'', category:''})} className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200 uppercase">Xóa bộ lọc</button></div></div>
+                              <div className="grid grid-cols-4 gap-6">{[{ label: 'Tổng Ticket', val: filteredTasks.length, color: 'indigo', Icon: TableIcon }, { label: 'Hoàn thành', val: filteredTasks.filter(t => t.overallStatus === 'Hoàn thành').length, color: 'emerald', Icon: CheckCircle2 }, { label: 'Đang xử lý', val: filteredTasks.filter(t => t.overallStatus === 'Đang xử lý').length, color: 'amber', Icon: Clock }, { label: 'Chưa duyệt', val: filteredTasks.filter(t => t.paperStatus === 'Chưa duyệt').length, color: 'rose', Icon: AlertCircle }].map((kpi, i) => (<div key={i} className="bg-white p-7 rounded-[2.5rem] border border-slate-200 shadow-sm transition-all hover:shadow-lg"><div className={`w-12 h-12 flex items-center justify-center rounded-2xl mb-6 ${getColorClasses(kpi.color)}`}><kpi.Icon size={24}/></div><h4 className="text-slate-400 text-[11px] font-black uppercase mb-1 tracking-widest">{kpi.label}</h4><p className="text-4xl font-black text-slate-900">{kpi.val}</p></div>))}</div>
                               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[400px] hover:shadow-lg transition-all"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 text-center tracking-widest underline decoration-indigo-200">Trạng thái hoàn thành tổng</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataOverall}><XAxis dataKey="name" style={{fontSize: '9px', fontWeight: 700}} /><Tooltip /><Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>{chartDataOverall.map((s, i) => <Cell key={i} fill={STATUS_COLOR_MAP[s.name]} />)}</Bar></BarChart></ResponsiveContainer></div>
-                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[400px] lg:col-span-2 flex flex-col items-center hover:shadow-lg transition-all"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 tracking-widest underline decoration-indigo-200">Phân bổ khối lượng Team</h4><ResponsiveContainer width="100%" height="80%"><BarChart data={teamVolumeData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={100} style={{fontSize: '11px', fontWeight: 800}} /><Tooltip /><Bar dataKey="value" barSize={35} radius={[0, 8, 8, 0]}>{teamVolumeData.map((e, i) => <Cell key={i} fill={TEAM_COLORS[e.name.toLowerCase()]} />)}</Bar></BarChart></ResponsiveContainer></div>
+                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[400px]"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 text-center tracking-widest underline decoration-indigo-200">Trạng thái hoàn thành tổng</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataOverall}><XAxis dataKey="name" style={{fontSize: '9px', fontWeight: 700}} /><Tooltip /><Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>{chartDataOverall.map((s, i) => <Cell key={i} fill={STATUS_COLOR_MAP[s.name]} />)}</Bar></BarChart></ResponsiveContainer></div>
+                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[400px] lg:col-span-2 flex flex-col items-center"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 tracking-widest underline decoration-indigo-200">Phân bổ khối lượng Team</h4><ResponsiveContainer width="100%" height="80%"><BarChart data={teamVolumeData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={100} style={{fontSize: '11px', fontWeight: 800}} /><Tooltip /><Bar dataKey="value" barSize={35} radius={[0, 8, 8, 0]}>{teamVolumeData.map((e, i) => <Cell key={i} fill={TEAM_COLORS[e.name.toLowerCase()]} />)}</Bar></BarChart></ResponsiveContainer></div>
                               </div>
                               <div className="grid grid-cols-3 gap-8 border-t pt-10">
                                  {['brand', 'operation', 'media'].map(t => (
-                                   <div key={t} className={`p-8 bg-white rounded-[2.5rem] border border-slate-200 h-[450px] flex flex-col hover:shadow-xl transition-all duration-300 ${teamUrgent(t).length > 0 ? 'border-rose-200 shadow-2xl shadow-rose-50' : ''}`}><h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6 flex justify-between"><span>Team {t.toUpperCase()} Sát Deadline</span><span className="bg-slate-100 px-2 py-0.5 rounded text-indigo-600 font-bold">{teamUrgent(t).length}</span></h4>
+                                   <div key={t} className={`p-8 bg-white rounded-[2.5rem] border border-slate-200 h-[450px] flex flex-col ${teamUrgent(t).length > 0 ? 'border-rose-200 shadow-2xl shadow-rose-50' : ''}`}><h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6 flex justify-between"><span>Team {t.toUpperCase()} Sát Deadline</span><span className="bg-slate-100 px-2 py-0.5 rounded text-indigo-600 font-bold">{teamUrgent(t).length}</span></h4>
                                       <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">{teamUrgent(t).length === 0 ? <div className="h-full flex items-center justify-center text-slate-300 italic text-xs">Hoạt động ổn định</div> : teamUrgent(t).map(item => (<div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100"><div className="text-[11px] font-black text-slate-800 leading-tight mb-1 truncate">{item.taskName}</div><div className="flex justify-between items-center text-[9px] font-bold text-rose-500 mt-1"><span className="text-slate-400 truncate max-w-[80px]">{item.unit}</span><span className="flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-lg font-black tracking-tighter"><Clock size={10}/> {item[`${t}Task`].deadline}</span></div></div>))}</div>
                                       <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2">{teamStats(t).map((s, idx) => (<div key={idx} className="flex items-center gap-1.5 text-[8px] font-black uppercase text-slate-400"><div className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_COLOR_MAP[s.name] }}></div>{s.name.charAt(0)}: {s.value}</div>))}</div>
                                    </div>
@@ -310,74 +367,38 @@
                            </div>
                         )}
 
+                        {/* INPUT TAB */}
                         {activeTab === 'input' && (
-                           <div className="max-w-4xl mx-auto animate-in pb-20">
-                              <header className="mb-10 flex justify-between items-center slide-up"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Khởi tạo Ticket</h2><button onClick={handleAiOptimize} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-100 hover:shadow-lg transition-all"><Wand2 size={14}/> ✨ Tối ưu bằng AI</button></header>
-                              <form onSubmit={handleAddTask} className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-xl space-y-12 slide-up">
+                           <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom duration-500 pb-20">
+                              <header className="mb-10 flex justify-between items-center"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Khởi tạo Ticket</h2><button onClick={handleAiOptimize} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-100 transition-all"><Wand2 size={14}/> ✨ Tối ưu bằng AI</button></header>
+                              <form onSubmit={handleAddTask} className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-xl space-y-12">
                                  <div className="space-y-8"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">I. Thông tin chung</h3><div className="grid grid-cols-2 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Tên Task (Chung) *</label><input required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" value={formData.taskName} onChange={e => setFormData({...formData, taskName: e.target.value})} placeholder="Tên chiến dịch..." /></div><div className="space-y-1"><label className="text-sm font-bold">Đơn vị yêu cầu *</label><select required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none font-bold" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})}><option value="">-- Chọn đơn vị --</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div></div><div className="grid grid-cols-3 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Ngày Order</label><input type="date" className="w-full px-5 py-4 rounded-2xl border-slate-200 bg-slate-50 text-sm outline-none" value={formData.orderDate} onChange={e => setFormData({...formData, orderDate: e.target.value})} /></div><div className="space-y-1"><label className="text-sm font-bold text-indigo-600">Hoàn thành tổng *</label><select className="w-full px-5 py-4 rounded-2xl border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-700" value={formData.overallStatus} onChange={e => setFormData({...formData, overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><div className="space-y-1"><label className="text-sm font-bold">Phân loại</label><MultiSelect options={CATEGORIES} selected={formData.categories} onChange={v => setFormData({...formData, categories: v})} /></div></div></div>
-                                 <div className="space-y-8 pt-10 border-t border-slate-100"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">II. Phân công đội ngũ</h3><div className="grid grid-cols-3 gap-6">{['brand', 'operation', 'media'].map(t => (<div key={t} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4 hover:shadow-lg transition-all duration-300"><span className="text-[10px] font-black uppercase text-slate-400">Team {t.toUpperCase()}</span><input className="w-full p-3 text-[11px] border border-slate-200 rounded-xl font-bold bg-white" placeholder="Tên task cụ thể..." value={formData[`${t}Task`].name} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], name: e.target.value}})} /><select className="w-full p-3 text-[11px] border rounded-xl font-bold bg-white outline-none" value={formData[`${t}Task`].status} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select><input type="date" className="w-full p-3 text-[11px] border rounded-xl bg-white outline-none" value={formData[`${t}Task`].deadline} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], deadline: e.target.value}})} /></div>))}</div></div>
-                                 <button type="submit" className="w-full bg-indigo-600 text-white font-black py-7 rounded-[2.5rem] shadow-2xl hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-1 transition-all text-xl uppercase tracking-tighter">Phát hành Ticket</button>
+                                 <div className="space-y-8 pt-10 border-t border-slate-100"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">II. Phân công đội ngũ</h3><div className="grid grid-cols-3 gap-6">{['brand', 'operation', 'media'].map(t => (<div key={t} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4"><span className="text-[10px] font-black uppercase text-slate-400">Team {t.toUpperCase()}</span><input className="w-full p-3 text-[11px] border border-slate-200 rounded-xl font-bold bg-white" placeholder="Tên task cụ thể..." value={formData[`${t}Task`].name} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], name: e.target.value}})} /><select className="w-full p-3 text-[11px] border rounded-xl font-bold bg-white outline-none" value={formData[`${t}Task`].status} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select><input type="date" className="w-full p-3 text-[11px] border rounded-xl bg-white outline-none" value={formData[`${t}Task`].deadline} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], deadline: e.target.value}})} /></div>))}</div></div>
+                                 <button type="submit" className="w-full bg-indigo-600 text-white font-black py-7 rounded-[2.5rem] shadow-2xl hover:bg-indigo-700 transition-all text-xl uppercase tracking-tighter">Phát hành Ticket</button>
                               </form>
                            </div>
                         )}
 
+                        {/* LIST TAB */}
                         {activeTab === 'list' && (
-                           <div className="flex flex-col h-full overflow-hidden animate-in">
-                              <header className="mb-6 flex justify-between items-center slide-up"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase tracking-widest">Danh sách công việc</h2><div className="flex gap-2"><button onClick={downloadTemplate} title="Tải Excel mẫu" className="p-3 bg-white border rounded-xl text-slate-400 hover:text-indigo-600 hover:shadow-md transition-all"><Download size={20}/></button><label className="p-3 bg-indigo-600 text-white rounded-xl shadow-lg cursor-pointer hover:bg-indigo-700 hover:-translate-y-0.5 transition-all"><Upload size={20}/><input type="file" className="hidden" onChange={handleFileUpload}/></label></div></header>
-                              <div className="bg-white rounded-[2.5rem] border shadow-sm flex-1 overflow-hidden relative flex flex-col slide-up">
+                           <div className="flex flex-col h-full overflow-hidden">
+                              <header className="mb-6 flex justify-between items-center"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase tracking-widest">Danh sách công việc</h2><div className="flex gap-2"><button onClick={downloadTemplate} title="Tải Excel mẫu" className="p-3 bg-white border rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all"><Download size={20}/></button><label className="p-3 bg-indigo-600 text-white rounded-xl shadow-lg cursor-pointer hover:bg-indigo-700 transition-all"><Upload size={20}/><input type="file" className="hidden" onChange={handleFileUpload}/></label></div></header>
+                              <div className="bg-white rounded-[2.5rem] border shadow-sm flex-1 overflow-hidden relative flex flex-col">
                                  <div className="overflow-auto custom-scrollbar flex-1 pb-80">
                                     <table className="table-fixed text-left border-collapse divide-x divide-slate-100" style={{ width: 'max-content' }}>
                                        <thead className="sticky top-0 z-[70]">
-                                          <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase text-slate-400 tracking-widest divide-x divide-slate-200">
-                                              <th className="px-4 py-5 sticky-col-0" style={{ width: colWidths.actions }}>Tác vụ <div className="resizer" onMouseDown={(e) => handleResize('actions', e.clientX, colWidths.actions)} /></th>
-                                              <th className="px-6 py-5 sticky-col-1" style={{ width: colWidths.admin }}>Hành chính <div className="resizer" onMouseDown={(e) => handleResize('admin', e.clientX, colWidths.admin)} /></th>
-                                              <th className="px-6 py-5 sticky-col-2" style={{ width: colWidths.task }}>Tên Task <div className="resizer" onMouseDown={(e) => handleResize('task', e.clientX, colWidths.task)} /></th>
-                                              <th className="px-6 py-5 sticky-col-3 bg-indigo-50/50" style={{ width: colWidths.overall }}>Hoàn thành tổng <div className="resizer" onMouseDown={(e) => handleResize('overall', e.clientX, colWidths.overall)} /></th>
-                                              <th className="px-6 py-5" style={{ width: colWidths.unit }}>Đơn vị <div className="resizer" onMouseDown={(e) => handleResize('unit', e.clientX, colWidths.unit)} /></th>
-                                              <th className="px-6 py-5 bg-purple-100 text-purple-700" style={{ width: colWidths.brand }}>Brand Team <div className="resizer" onMouseDown={(e) => handleResize('brand', e.clientX, colWidths.brand)} /></th>
-                                              <th className="px-6 py-5 bg-orange-100 text-orange-700" style={{ width: colWidths.operation }}>Operation Team <div className="resizer" onMouseDown={(e) => handleResize('operation', e.clientX, colWidths.operation)} /></th>
-                                              <th className="px-6 py-5 bg-sky-100 text-sky-700" style={{ width: colWidths.media }}>Media Team <div className="resizer" onMouseDown={(e) => handleResize('media', e.clientX, colWidths.media)} /></th>
-                                          </tr>
-                                          {/* Sub-header / Legend Row */}
-                                          <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-bold text-slate-400 divide-x divide-slate-100">
-                                              <th className="sticky-col-0"></th>
-                                              <th className="sticky-col-1 text-center italic">Ngày / Trạng thái</th>
-                                              <th className="sticky-col-2 text-center italic">Tên / Phân loại</th>
-                                              <th className="sticky-col-3 bg-indigo-50/30"></th>
-                                              <th></th>
-                                              <th className="px-6 py-2 bg-purple-50 text-purple-400 tracking-wider">Tên Task • Deadline • Trạng thái • Link</th>
-                                              <th className="px-6 py-2 bg-orange-50 text-orange-400 tracking-wider">Tên Task • Deadline • Trạng thái • Link</th>
-                                              <th className="px-6 py-2 bg-sky-50 text-sky-400 tracking-wider">Tên Task • Deadline • Trạng thái • Link</th>
-                                          </tr>
-                                          <tr className="bg-white border-b divide-x divide-slate-100">
-                                              <th className="sticky-col-0"></th>
-                                              <th className="p-2 sticky-col-1"><input className="w-full p-1.5 text-[9px] border border-slate-100 rounded bg-slate-50 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-200 transition-all" placeholder="Lọc ngày..." value={colFilters.date} onChange={e => setColFilters({...colFilters, date: e.target.value})}/></th>
-                                              <th className="p-2 sticky-col-2"><input className="w-full p-1.5 text-[9px] border border-slate-100 rounded bg-slate-50 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-200 transition-all" placeholder="Lọc task..." value={colFilters.task} onChange={e => setColFilters({...colFilters, task: e.target.value})}/></th>
-                                              <th className="p-2 sticky-col-3 bg-indigo-50/50"><select className="w-full p-1.5 text-[9px] border border-slate-100 rounded bg-slate-50 outline-none font-bold hover:bg-white transition-all" value={colFilters.overall} onChange={e => setColFilters({...colFilters, overall: e.target.value})}><option value="">Tất cả</option>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></th>
-                                              <th className="p-2"><input className="w-full p-1.5 text-[9px] border border-slate-100 rounded bg-slate-50 outline-none font-bold hover:bg-white transition-all" placeholder="Lọc đơn vị..." value={colFilters.unit} onChange={e => setColFilters({...colFilters, unit: e.target.value})}/></th>
-                                              <th className="bg-purple-50"></th><th className="bg-orange-50"></th><th className="bg-sky-50"></th>
-                                          </tr>
+                                          <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase text-slate-400 tracking-widest divide-x divide-slate-200"><th className="px-4 py-5 sticky-col-0" style={{ width: colWidths.actions }}>Tác vụ <div className="resizer" onMouseDown={(e) => handleResize('actions', e.clientX, colWidths.actions)} /></th><th className="px-6 py-5 sticky-col-1" style={{ width: colWidths.admin }}>Hành chính <div className="resizer" onMouseDown={(e) => handleResize('admin', e.clientX, colWidths.admin)} /></th><th className="px-6 py-5 sticky-col-2" style={{ width: colWidths.task }}>Tên Task <div className="resizer" onMouseDown={(e) => handleResize('task', e.clientX, colWidths.task)} /></th><th className="px-6 py-5 sticky-col-3 bg-indigo-50/50" style={{ width: colWidths.overall }}>Hoàn thành tổng <div className="resizer" onMouseDown={(e) => handleResize('overall', e.clientX, colWidths.overall)} /></th><th className="px-6 py-5" style={{ width: colWidths.unit }}>Đơn vị <div className="resizer" onMouseDown={(e) => handleResize('unit', e.clientX, colWidths.unit)} /></th><th className="px-6 py-5 bg-purple-50/20" style={{ width: colWidths.brand }}>Brand Team <div className="resizer" onMouseDown={(e) => handleResize('brand', e.clientX, colWidths.brand)} /></th><th className="px-6 py-5 bg-orange-50/20" style={{ width: colWidths.operation }}>Operation Team <div className="resizer" onMouseDown={(e) => handleResize('operation', e.clientX, colWidths.operation)} /></th><th className="px-6 py-5 bg-sky-50/20" style={{ width: colWidths.media }}>Media Team <div className="resizer" onMouseDown={(e) => handleResize('media', e.clientX, colWidths.media)} /></th></tr>
+                                          <tr className="bg-white border-b divide-x divide-slate-100"><th className="sticky-col-0"></th><th className="p-2 sticky-col-1"><input className="w-full p-1.5 text-[9px] border border-slate-100 rounded bg-slate-50 outline-none" placeholder="Lọc ngày..." value={colFilters.date} onChange={e => setColFilters({...colFilters, date: e.target.value})}/></th><th className="p-2 sticky-col-2"><input className="w-full p-1.5 text-[9px] border border-slate-100 rounded bg-slate-50 outline-none" placeholder="Lọc task..." value={colFilters.task} onChange={e => setColFilters({...colFilters, task: e.target.value})}/></th><th className="p-2 sticky-col-3 bg-indigo-50/50"><select className="w-full p-1.5 text-[9px] border border-slate-100 rounded bg-slate-50 outline-none font-bold" value={colFilters.overall} onChange={e => setColFilters({...colFilters, overall: e.target.value})}><option value="">Tất cả</option>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></th><th className="p-2"><input className="w-full p-1.5 text-[9px] border border-slate-100 rounded bg-slate-50 outline-none font-bold" placeholder="Lọc đơn vị..." value={colFilters.unit} onChange={e => setColFilters({...colFilters, unit: e.target.value})}/></th><th colSpan="3"></th></tr>
                                        </thead>
                                        <tbody className="divide-y divide-slate-100">
                                           {filteredTasks.map(task => (
-                                             <tr key={task.id} className="task-row bg-white divide-x divide-slate-100 group">
-                                                <td className="px-4 py-4 sticky-col-0 text-center z-20"><button onClick={() => setDeleteModal({ open: true, taskId: task.id, taskName: task.taskName })} className="p-2 text-slate-300 hover:text-rose-600 transition-all rounded-lg hover:bg-rose-50 hover:scale-110"><Trash2 size={16}/></button></td>
-                                                <td className="px-6 py-4 sticky-col-1 z-20 text-[10px]"><input type="date" className="w-full border-none bg-transparent font-bold p-0 mb-1 focus:ring-0 outline-none cursor-pointer" value={task.orderDate} onChange={e => handleUpdateTask(task.id, {orderDate: e.target.value})} /><select className={`text-[9px] w-full border-none p-0 focus:ring-0 font-black uppercase outline-none cursor-pointer ${task.paperStatus === 'Hiệu trưởng duyệt' ? 'text-indigo-600' : task.paperStatus === 'Đã duyệt' ? 'text-emerald-600' : 'text-rose-500'}`} value={task.paperStatus} onChange={e => handleUpdateTask(task.id, {paperStatus: e.target.value})}>{PAPER_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
-                                                <td className="px-6 py-4 sticky-col-2 z-20 !overflow-visible"><input className="text-xs w-full border-none bg-transparent font-black text-slate-900 p-0 mb-1 focus:ring-0 truncate outline-none hover:text-indigo-600 transition-colors" value={task.taskName} onChange={e => handleUpdateTask(task.id, {taskName: e.target.value})} /><MultiSelect inline options={CATEGORIES} selected={task.categories} onChange={v => handleUpdateTask(task.id, {categories: v})} /></td>
-                                                <td className="px-6 py-4 sticky-col-3 z-20 bg-indigo-50/30 text-center"><select className={`text-[10px] w-full border-none bg-transparent p-0 focus:ring-0 font-black uppercase text-center outline-none cursor-pointer hover:scale-105 transition-transform`} style={{ color: STATUS_COLOR_MAP[task.overallStatus] }} value={task.overallStatus} onChange={e => handleUpdateTask(task.id, {overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
-                                                <td className="px-6 py-4"><select className="text-[10px] w-full border-none bg-transparent p-0 font-bold text-slate-600 focus:ring-0 outline-none cursor-pointer hover:text-indigo-600" value={task.unit} onChange={e => handleUpdateTask(task.id, {unit: e.target.value})}>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></td>
-                                                {['brand', 'operation', 'media'].map(t => (
-                                                    <td key={t} className={`px-6 py-4 transition-colors duration-300 ${t === 'brand' ? 'bg-purple-50 group-hover:bg-purple-100/50' : t === 'operation' ? 'bg-orange-50 group-hover:bg-orange-100/50' : 'bg-sky-50 group-hover:bg-sky-100/50'}`}>
-                                                        <div className="flex flex-col gap-1.5">
-                                                            <input className="text-[11px] w-full border-none bg-transparent p-0 focus:ring-0 font-black text-slate-700 outline-none placeholder:text-slate-300/50" value={task[`${t}Task`].name} placeholder="Tên task..." onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], name: e.target.value}})} />
-                                                            <div className="flex gap-2 items-center">
-                                                                <input type="date" className="text-[9px] border-none bg-transparent p-0 font-black w-1/2 outline-none text-slate-500" value={task[`${t}Task`].deadline} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], deadline: e.target.value}})} />
-                                                                <select className={`text-[9px] border-none bg-transparent p-0 font-black w-1/2 outline-none cursor-pointer ${task[`${t}Task`].status === 'Hoàn thành' ? 'text-emerald-600' : 'text-slate-400'}`} value={task[`${t}Task`].status} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select>
-                                                            </div>
-                                                            <input className="text-[8px] border-none bg-transparent p-0 text-indigo-500 font-bold outline-none italic placeholder:text-indigo-200" value={task[`${t}Task`].link} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], link: e.target.value}})} placeholder="Link..." />
-                                                        </div>
-                                                    </td>
-                                                ))}
+                                             <tr key={task.id} className="hover:bg-indigo-50/5 transition-colors divide-x divide-slate-100">
+                                                <td className="px-4 py-4 sticky-col-0 text-center z-20"><button onClick={() => setDeleteModal({ open: true, taskId: task.id, taskName: task.taskName })} className="p-2 text-slate-300 hover:text-rose-600 transition-all rounded-lg hover:bg-rose-50"><Trash2 size={16}/></button></td>
+                                                <td className="px-6 py-4 sticky-col-1 z-20 text-[10px]"><input type="date" className="w-full border-none bg-transparent font-bold p-0 mb-1 focus:ring-0 outline-none" value={task.orderDate} onChange={e => handleUpdateTask(task.id, {orderDate: e.target.value})} /><select className={`text-[9px] w-full border-none p-0 focus:ring-0 font-black uppercase outline-none ${task.paperStatus === 'Hiệu trưởng duyệt' ? 'text-indigo-600' : task.paperStatus === 'Đã duyệt' ? 'text-emerald-600' : 'text-rose-500'}`} value={task.paperStatus} onChange={e => handleUpdateTask(task.id, {paperStatus: e.target.value})}>{PAPER_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
+                                                <td className="px-6 py-4 sticky-col-2 z-20 !overflow-visible"><input className="text-xs w-full border-none bg-transparent font-black text-slate-900 p-0 mb-1 focus:ring-0 truncate outline-none" value={task.taskName} onChange={e => handleUpdateTask(task.id, {taskName: e.target.value})} /><MultiSelect inline options={CATEGORIES} selected={task.categories} onChange={v => handleUpdateTask(task.id, {categories: v})} /></td>
+                                                <td className="px-6 py-4 sticky-col-3 z-20 bg-indigo-50/30 text-center"><select className={`text-[10px] w-full border-none bg-transparent p-0 focus:ring-0 font-black uppercase text-center outline-none`} style={{ color: STATUS_COLOR_MAP[task.overallStatus] }} value={task.overallStatus} onChange={e => handleUpdateTask(task.id, {overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
+                                                <td className="px-6 py-4"><select className="text-[10px] w-full border-none bg-transparent p-0 font-bold text-slate-600 focus:ring-0 outline-none" value={task.unit} onChange={e => handleUpdateTask(task.id, {unit: e.target.value})}>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></td>
+                                                {['brand', 'operation', 'media'].map(t => (<td key={t} className={`px-6 py-4 bg-${t === 'brand' ? 'purple' : t === 'operation' ? 'orange' : 'sky'}-50/10`}><div className="flex flex-col gap-1.5"><input className="text-[11px] w-full border-none bg-transparent p-0 focus:ring-0 font-black text-slate-700 outline-none" value={task[`${t}Task`].name} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], name: e.target.value}})} /><div className="flex gap-2"><input type="date" className="text-[9px] border-none bg-transparent p-0 font-black w-1/2 outline-none" value={task[`${t}Task`].deadline} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], deadline: e.target.value}})} /><select className={`text-[9px] border-none bg-transparent p-0 font-black w-1/2 outline-none ${task[`${t}Task`].status === 'Hoàn thành' ? 'text-emerald-600' : 'text-slate-400'}`} value={task[`${t}Task`].status} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><input className="text-[8px] border-none bg-transparent p-0 text-indigo-500 font-bold outline-none italic" value={task[`${t}Task`].link} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], link: e.target.value}})} placeholder="Link trả..." /></div></td>))}
                                              </tr>
                                           ))}
                                        </tbody>
