@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MarCom Dashboard Pro v12.19 (Fix Syntax & Reorder)</title>
+    <title>MarCom Dashboard Pro v12.20 (Team Charts)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -110,7 +110,7 @@
         import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
         import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Filter, Building2, LogOut } from 'lucide-react';
-        import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+        import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, PieChart, Pie } from 'recharts';
 
         // --- CONFIG ---
         const firebaseConfig = {
@@ -158,17 +158,15 @@
         const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
         const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
-        
-        // FIX: REORDERED STATUSES (Hoàn thành ở cuối)
         const OVERALL_STATUS = ["Chờ duyệt", "Gấp", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
         const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
         
         const STATUS_COLOR_MAP = { 
-            "Chờ duyệt": "#a855f7", // Tím
-            "Gấp": "#ef4444",       // Đỏ
-            "Chưa bắt đầu": "#94a3b8", // Xám
-            "Đang xử lý": "#6366f1", // Xanh dương
-            "Hoàn thành": "#10b981", // Xanh lá
+            "Chờ duyệt": "#a855f7",
+            "Gấp": "#ef4444",
+            "Chưa bắt đầu": "#94a3b8", 
+            "Đang xử lý": "#6366f1", 
+            "Hoàn thành": "#10b981", 
             "Không có task": "#cbd5e1",
             "Không": "#cbd5e1"
         };
@@ -296,7 +294,6 @@
             const chartDataOverall = useMemo(() => { const counts = {}; OVERALL_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t.overallStatus || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); }, [filteredTasks]);
             const teamVolumeData = useMemo(() => [{ name: 'Brand', value: filteredTasks.filter(t => t.brandTask?.status !== 'Không có task').length }, { name: 'Operation', value: filteredTasks.filter(t => t.operationTask?.status !== 'Không có task').length }, { name: 'Media', value: filteredTasks.filter(t => t.mediaTask?.status !== 'Không có task').length }], [filteredTasks]);
             
-            // FIX: Syntax Error by declaring helper function clearly
             const getTeamStats = (teamKey) => {
                 const counts = {};
                 TASK_STATUS.forEach(s => counts[s] = 0);
@@ -332,7 +329,7 @@
                     )}
                     <aside className={`sidebar-transition fixed inset-y-0 left-0 z-[100] text-white shadow-2xl bg-[#0F172A] w-64 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isMobile ? '' : 'lg:translate-x-0 lg:w-64'}`}>
                         <div className="p-8 border-b border-slate-800 flex items-center justify-between overflow-hidden">
-                            <div className="flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.19</span></h1></div>
+                            <div className="flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.20</span></h1></div>
                             {isMobile && <button onClick={() => setSidebarOpen(false)} className="text-slate-400"><X size={24}/></button>}
                         </div>
                         <nav className="p-4 flex-1 space-y-1">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => { setActiveTab(tab.id); if(isMobile) setSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
@@ -372,21 +369,28 @@
                               </div>
                               <div className="bg-white p-6 rounded-[2rem] border border-slate-200 h-[400px]"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 text-center tracking-widest underline decoration-indigo-200">Tiến độ theo hạng mục</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataCategory} margin={{top: 20, right: 10, left: 0, bottom: 5}}><XAxis dataKey="name" style={{fontSize: '9px', fontWeight: 700}} interval={0} angle={-15} textAnchor="end" height={60} /><YAxis style={{fontSize: '10px'}} /><Tooltip /><Legend /><Bar dataKey="completed" name="Xong" stackId="a" fill="#10b981" barSize={40} /><Bar dataKey="pending" name="Chưa" stackId="a" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={40} /></BarChart></ResponsiveContainer></div>
                               
-                              {/* TEAM STATS DETAIL */}
+                              {/* TEAM CHARTS & URGENT TASKS */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {['brand', 'operation', 'media'].map(t => (
-                                   <div key={t} className={`p-6 bg-white rounded-[2rem] border border-slate-200 h-[400px] flex flex-col`}>
-                                      <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex justify-between"><span>Team {t.toUpperCase()}</span><span className="bg-slate-100 px-2 py-0.5 rounded text-indigo-600 font-bold">{teamUrgent(t).length} gấp</span></h4>
-                                      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2 mb-4">
-                                          {teamUrgent(t).length === 0 ? <div className="h-full flex items-center justify-center text-slate-300 italic text-xs">Không có task gấp</div> : teamUrgent(t).map(item => (<div key={item.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100"><div className="text-[11px] font-black text-slate-800 leading-tight mb-1 truncate">{item.taskName}</div><div className="flex justify-between items-center text-[9px] font-bold text-rose-500 mt-1"><span className="text-slate-400 truncate max-w-[80px]">{item.unit}</span><span className="flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-lg font-black tracking-tighter"><Clock size={10}/> {item[`${t}Task`].deadline}</span></div></div>))}
+                                   <div key={t} className={`p-6 bg-white rounded-[2rem] border border-slate-200 h-[450px] flex flex-col`}>
+                                      <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex justify-between"><span>Team {t.toUpperCase()}</span><span className="bg-rose-50 px-2 py-0.5 rounded text-rose-600 font-bold">{teamUrgent(t).length} gấp</span></h4>
+                                      
+                                      {/* Pie Chart Section */}
+                                      <div className="h-48 w-full mb-4">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={getTeamStats(t).filter(d => d.value > 0)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={40} paddingAngle={5}>
+                                                    {getTeamStats(t).map((entry, index) => <Cell key={`cell-${index}`} fill={STATUS_COLOR_MAP[entry.name]} />)}
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend iconSize={8} layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize: '10px'}}/>
+                                            </PieChart>
+                                          </ResponsiveContainer>
                                       </div>
-                                      <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-2">
-                                          {getTeamStats(t).map((s, idx) => (
-                                              <div key={idx} className="flex items-center gap-1.5 text-[8px] font-black uppercase text-slate-400">
-                                                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_COLOR_MAP[s.name] }}></div>
-                                                  {s.name}: {s.value}
-                                              </div>
-                                          ))}
+
+                                      {/* Urgent List Section */}
+                                      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2 border-t border-slate-100 pt-3">
+                                          {teamUrgent(t).length === 0 ? <div className="h-full flex items-center justify-center text-slate-300 italic text-xs">Ổn định</div> : teamUrgent(t).map(item => (<div key={item.id} className="p-3 bg-rose-50/50 rounded-xl border border-rose-100"><div className="text-[10px] font-bold text-slate-700 leading-tight mb-1 truncate">{item.taskName}</div><div className="flex justify-between items-center text-[9px] font-bold text-rose-500"><span className="truncate max-w-[80px]">{item[`${t}Task`].name || "Chưa có tên"}</span><span className="flex items-center gap-1"><Clock size={10}/> {item[`${t}Task`].deadline}</span></div></div>))}
                                       </div>
                                    </div>
                                 ))}
