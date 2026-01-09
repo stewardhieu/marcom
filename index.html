@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.2 (Fixed)</title>
+    <title>MarCom Dashboard Pro v12.3 (Final Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -19,6 +19,7 @@
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
         "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
         "lucide-react": "https://esm.sh/lucide-react@0.330.0",
@@ -31,8 +32,6 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
-        
-        /* Tùy chỉnh thanh cuộn */
         .custom-scrollbar::-webkit-scrollbar { height: 10px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -43,11 +42,9 @@
         .sticky-col-2 { position: sticky; left: calc(var(--col-width-actions, 80px) + var(--col-width-admin, 140px)); z-index: 45; background: white; border-right: 1px solid #e2e8f0; }
         .sticky-col-3 { position: sticky; left: calc(var(--col-width-actions, 80px) + var(--col-width-admin, 140px) + var(--col-width-task, 280px)); z-index: 45; background: white; border-right: 3px solid #cbd5e1; }
         
-        /* Resizer */
         .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 80; touch-action: none; }
         .resizer:hover { background: #6366f1; opacity: 0.3; }
         
-        /* Tabs & Animation */
         .tab-content { display: none; height: 100%; width: 100%; }
         .tab-content.active { display: flex; flex-direction: column; }
         .animate-in { animation-duration: 0.5s; animation-fill-mode: both; }
@@ -64,11 +61,9 @@
     <div id="root" class="h-full"></div>
 
     <script type="text/babel" data-type="module">
-        // Import từ Import Map thay vì URL trực tiếp
         import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
         import { createRoot } from 'react-dom/client';
         
-        // Firebase
         import { initializeApp } from 'firebase/app';
         import { 
             getFirestore, collection, addDoc, onSnapshot, updateDoc, 
@@ -78,19 +73,17 @@
             getAuth, signInAnonymously, onAuthStateChanged 
         } from 'firebase/auth';
 
-        // Icons
         import { 
             LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, 
             Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, 
             Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw 
         } from 'lucide-react';
 
-        // Charts (Đã được fix lỗi useRef nhờ Import Map)
         import { 
             BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell 
         } from 'recharts';
 
-        // --- CẤU HÌNH ---
+        // --- CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyDNdBlMZL42nkWc7W1OtgkWvkxKCwxKCjQ",
             authDomain: "marcom-dashboard-test.firebaseapp.com",
@@ -103,71 +96,39 @@
         const appId = 'marcom-hub-pro-v12';
         const apiKey = ""; // Gemini API Key
 
-        // --- KHỞI TẠO FIREBASE ---
+        // --- INIT FIREBASE ---
         let app, auth, db;
         try {
             if (firebaseConfig.apiKey) {
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-            } else {
-                console.warn("⚠️ CHƯA CẤU HÌNH FIREBASE");
-            }
-        } catch (e) {
-            console.error("Lỗi khởi tạo Firebase:", e);
-        }
+            } else { console.warn("⚠️ CHƯA CẤU HÌNH FIREBASE"); }
+        } catch (e) { console.error("Lỗi khởi tạo Firebase:", e); }
 
         const GEMINI_MODEL = "gemini-2.0-flash-exp";
 
         async function callGemini(payload) {
-            if (!apiKey) {
-                alert("Vui lòng cấu hình Gemini API Key.");
-                return { candidates: [] };
-            }
+            if (!apiKey) { alert("Vui lòng cấu hình Gemini API Key."); return { candidates: [] }; }
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                 });
                 return await response.json();
-            } catch (error) {
-                console.error("AI Error:", error);
-                throw error;
-            }
+            } catch (error) { console.error("AI Error:", error); throw error; }
         }
 
-        // --- DATA CONSTANTS ---
-        const DEPARTMENTS = [
-            "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", 
-            "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", 
-            "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", 
-            "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", 
-            "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", 
-            "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", 
-            "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", 
-            "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", 
-            "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", 
-            "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", 
-            "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", 
-            "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", 
-            "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", 
-            "Media - MarCom", "Brand - MarCom"
-        ];
+        // --- DATA ---
+        const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom" ];
         const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "N/A"];
         const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại"];
         const TASK_STATUS = ["Không", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại"];
         const STATUS_COLOR_MAP = { "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", "Gác lại": "#f59e0b", "Không": "#cbd5e1" };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
-
-        const getColorClasses = (color) => {
-            const map = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', rose: 'bg-rose-50 text-rose-600', amber: 'bg-amber-50 text-amber-600', blue: 'bg-blue-50 text-blue-600' };
-            return map[color] || 'bg-slate-50 text-slate-600';
-        };
+        const getColorClasses = (color) => { const map = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', rose: 'bg-rose-50 text-rose-600', amber: 'bg-amber-50 text-amber-600', blue: 'bg-blue-50 text-blue-600' }; return map[color] || 'bg-slate-50 text-slate-600'; };
 
         // --- COMPONENTS ---
-        
         const MultiSelect = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
@@ -214,7 +175,7 @@
             );
         };
 
-        // --- MAIN APP ---
+        // --- APP ---
         function App() {
             const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('dashboard');
@@ -233,14 +194,12 @@
             // Auth
             useEffect(() => {
                 if (!auth) return;
-                const initAuth = async () => { 
-                    try { await signInAnonymously(auth); } catch(e) { console.error("Auth Error", e); } 
-                };
+                const initAuth = async () => { try { await signInAnonymously(auth); } catch(e) { console.error("Auth Error", e); } };
                 initAuth();
                 return onAuthStateChanged(auth, setUser);
             }, []);
 
-            // Data Sync
+            // Realtime Data
             useEffect(() => {
                 if (!user || !db) return;
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks');
@@ -257,15 +216,13 @@
                 if(!db) return alert("Chưa kết nối Database!");
                 try { 
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { ...formData, createdAt: serverTimestamp() }); 
-                    setFormData(emptyFormData); 
-                    setActiveTab('list'); 
+                    setFormData(emptyFormData); setActiveTab('list'); 
                 } catch (e) { console.error(e); }
             };
 
             const debouncedUpdate = useCallback(_.debounce(async (id, data) => {
                  if(!db) return;
-                 try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } 
-                 catch (e) { console.error("Update Error:", e); }
+                 try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } catch (e) { console.error("Update Error:", e); }
             }, 800), []);
 
             const handleUpdateTask = (id, updatedData) => { 
@@ -297,9 +254,7 @@
             const downloadTemplate = () => { 
                 if (!window.XLSX) return; 
                 const ws = XLSX.utils.json_to_sheet([{ "Ngày Order": "2026-01-07", "Tờ trình": "Chưa duyệt", "Tên Task Chung": "Tên sự kiện...", "Hoàn thành tổng": "Chưa bắt đầu", "Đơn vị": "Văn phòng trường", "Phân loại": "Thiết kế" }]); 
-                const wb = XLSX.utils.book_new(); 
-                XLSX.utils.book_append_sheet(wb, ws, "Tasks"); 
-                XLSX.writeFile(wb, "MarCom_Hub_Template.xlsx"); 
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tasks"); XLSX.writeFile(wb, "MarCom_Hub_Template.xlsx"); 
             };
 
             const handleFileUpload = (e) => {
@@ -321,16 +276,12 @@
                             categories: row["Phân loại"] ? row["Phân loại"].split(',').map(s => s.trim()) : [] 
                         }); 
                     }
-                    alert("Đã nhập dữ liệu thành công!"); 
-                    setActiveTab('list');
-                }; 
-                reader.readAsBinaryString(file); 
-                e.target.value = null;
+                    alert("Đã nhập dữ liệu thành công!"); setActiveTab('list');
+                }; reader.readAsBinaryString(file); e.target.value = null;
             };
 
             const handleAiOptimize = async () => {
-                if (!formData.taskName) return; 
-                setIsAiLoading(true);
+                if (!formData.taskName) return; setIsAiLoading(true);
                 try {
                     const res = await callGemini({ 
                         contents: [{ parts: [{ text: `Task: ${formData.taskName}` }] }], 
@@ -343,8 +294,7 @@
             };
 
             const handleAiAnalysis = async () => {
-                if (tasks.length === 0) return; 
-                setIsAiLoading(true);
+                if (tasks.length === 0) return; setIsAiLoading(true);
                 try { 
                     const ctx = tasks.map(t => `${t.taskName} (${t.overallStatus})`).join(', '); 
                     const res = await callGemini({ 
@@ -355,6 +305,7 @@
                 } catch (e) { console.error(e); } finally { setIsAiLoading(false); }
             };
 
+            // Memos
             const filteredTasks = useMemo(() => tasks.filter(t => {
                 const dateG = (!globalFilters.dateStart || t.orderDate >= globalFilters.dateStart) && (!globalFilters.dateEnd || t.orderDate <= globalFilters.dateEnd);
                 const unitG = !globalFilters.unit || t.unit === globalFilters.unit;
@@ -375,29 +326,17 @@
                 document.documentElement.style.setProperty('--col-width-task', `${colWidths.task}px`);
             }, [colWidths]);
 
-            if (!db) return (
-                <div className="h-screen flex items-center justify-center bg-slate-50 p-6">
-                    <div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg">
-                        <div className="mx-auto w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4"><Database size={32}/></div>
-                        <h2 className="text-2xl font-black text-slate-900 mb-2">Chưa kết nối Firebase</h2>
-                        <p className="text-slate-500 mb-6">Vui lòng kiểm tra lại cấu hình Firebase.</p>
-                        <a href="https://console.firebase.google.com/" target="_blank" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">Đến Firebase Console</a>
-                    </div>
-                </div>
-            );
+            if (!db) return ( <div className="h-screen flex items-center justify-center bg-slate-50 p-6"><div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg"><div className="mx-auto w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4"><Database size={32}/></div><h2 className="text-2xl font-black text-slate-900 mb-2">Chưa kết nối Firebase</h2><p className="text-slate-500 mb-6">Vui lòng kiểm tra lại cấu hình Firebase.</p><a href="https://console.firebase.google.com/" target="_blank" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">Đến Firebase Console</a></div></div> );
 
             return (
                 <div className="flex font-sans h-full">
                     {isAiLoading && (<div className="fixed inset-0 z-[20000] bg-white/60 backdrop-blur-sm flex items-center justify-center flex-col gap-4"><div className="animate-spin text-indigo-600"><RefreshCw size={48}/></div><p className="font-black text-indigo-950 uppercase tracking-widest text-sm animate-pulse">✨ Trí tuệ nhân tạo đang xử lý...</p></div>)}
-                    
                     <DeleteModal isOpen={deleteModal.open} taskName={deleteModal.taskName} onCancel={() => setDeleteModal({ open: false, taskId: null, taskName: '' })} onConfirm={confirmDelete} />
-                    
                     <aside className="w-64 bg-[#0F172A] fixed h-full flex flex-col z-[100] text-white shadow-2xl">
                         <div className="p-8 border-b border-slate-800 flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18}/> {tab.label}</button>))}</nav>
                         <div className="p-4 border-t border-slate-800"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu mẫu</button></div>
                     </aside>
-
                     <main className="ml-64 flex-1 p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F8FAFC]">
                         {/* DASHBOARD TAB */}
                         <div className={`tab-content ${activeTab === 'dashboard' ? 'active' : ''}`}>
