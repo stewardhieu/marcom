@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.13 (Portal Fix)</title>
+    <title>MarCom Dashboard Pro v12.14 (Mock Data & Shift Select)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -32,12 +32,22 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         
-        /* Sticky Columns */
-        .sticky-col-0 { position: sticky; left: 0; z-index: 45; background: white; border-right: 1px solid #cbd5e1; }
-        .sticky-col-1 { position: sticky; left: var(--col-width-check, 50px); z-index: 45; background: white; border-right: 1px solid #cbd5e1; }
-        .sticky-col-2 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px)); z-index: 45; background: white; border-right: 1px solid #cbd5e1; }
-        .sticky-col-3 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px) + var(--col-width-admin, 140px)); z-index: 45; background: white; border-right: 1px solid #cbd5e1; }
-        .sticky-col-4 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px) + var(--col-width-admin, 140px) + var(--col-width-task, 320px)); z-index: 45; background: white; border-right: 2px solid #94a3b8; }
+        /* FIX: Sticky Columns Background Opaque */
+        /* Gán màu nền trắng mặc định cho cột dính để che nội dung trôi qua */
+        th.sticky-col-0, th.sticky-col-1, th.sticky-col-2, th.sticky-col-3, th.sticky-col-4 { background-color: #f8fafc; z-index: 50; }
+        td.sticky-col-0, td.sticky-col-1, td.sticky-col-2, td.sticky-col-3, td.sticky-col-4 { background-color: white; z-index: 40; }
+        
+        /* Khi hover vào hàng, đổi màu nền cột dính để khớp với màu hover của hàng */
+        tr:hover td.sticky-col-0, tr:hover td.sticky-col-1, tr:hover td.sticky-col-2, tr:hover td.sticky-col-3, tr:hover td.sticky-col-4 { background-color: #f8fafc; }
+        
+        /* Selected row color override */
+        tr.bg-indigo-50 td.sticky-col-0, tr.bg-indigo-50 td.sticky-col-1, tr.bg-indigo-50 td.sticky-col-2, tr.bg-indigo-50 td.sticky-col-3, tr.bg-indigo-50 td.sticky-col-4 { background-color: #eef2ff; }
+
+        .sticky-col-0 { position: sticky; left: 0; border-right: 1px solid #cbd5e1; }
+        .sticky-col-1 { position: sticky; left: var(--col-width-check, 50px); border-right: 1px solid #cbd5e1; }
+        .sticky-col-2 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px)); border-right: 1px solid #cbd5e1; }
+        .sticky-col-3 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px) + var(--col-width-admin, 140px)); border-right: 1px solid #cbd5e1; }
+        .sticky-col-4 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px) + var(--col-width-admin, 140px) + var(--col-width-task, 320px)); border-right: 2px solid #94a3b8; }
 
         .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 80; touch-action: none; }
         .resizer:hover { background: #6366f1; opacity: 0.5; }
@@ -60,12 +70,12 @@
 
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-        import ReactDOM from 'react-dom'; // Import ReactDOM để dùng Portal
+        import ReactDOM from 'react-dom';
         import { createRoot } from 'react-dom/client';
         import { initializeApp } from 'firebase/app';
         import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Filter, Building2 } from 'lucide-react';
+        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Filter, Building2, Play, Sliders } from 'lucide-react';
         import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
         // --- CONFIG ---
@@ -117,8 +127,6 @@
         const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
         
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
-        
-        // FIX: Rút gọn trạng thái theo yêu cầu
         const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Chờ duyệt", "Gấp"];
         const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
         
@@ -128,29 +136,24 @@
         };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
-        // --- COMPONENT: MODAL MULTISELECT USING PORTAL (THE FIX) ---
+        // --- COMPONENTS ---
         const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
             const containerRef = useRef(null);
             
             const handleToggle = (option) => {
-                const newSelected = selected.includes(option) 
-                    ? selected.filter(i => i !== option) 
-                    : [...selected, option];
+                const newSelected = selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option];
                 onChange(newSelected);
             };
 
             return (
                 <div className="w-full">
-                    {/* Trigger Button */}
                     <div ref={containerRef} onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
                         <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">
                             {selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}
                         </div>
                         <ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
-
-                    {/* PORTAL: Render Modal vào body thay vì trong table */}
                     {isOpen && ReactDOM.createPortal(
                         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
                             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
@@ -158,27 +161,19 @@
                                     <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Phân loại công việc</h3>
                                     <button onClick={() => setIsOpen(false)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500"><X size={20}/></button>
                                 </div>
-                                
                                 <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar p-1">
                                     {options.map(option => (
-                                        <div key={option} onClick={() => handleToggle(option)} 
-                                             className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all ${selected.includes(option) ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold shadow-md' : 'border-slate-100 bg-white text-slate-600 hover:border-indigo-200'}`}>
-                                            <div className={`w-5 h-5 rounded flex items-center justify-center border ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
-                                                {selected.includes(option) && <Check size={14} className="text-white"/>}
-                                            </div>
+                                        <div key={option} onClick={() => handleToggle(option)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all ${selected.includes(option) ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold shadow-md' : 'border-slate-100 bg-white text-slate-600 hover:border-indigo-200'}`}>
+                                            <div className={`w-5 h-5 rounded flex items-center justify-center border ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>{selected.includes(option) && <Check size={14} className="text-white"/>}</div>
                                             <span className="text-xs">{option}</span>
                                         </div>
                                     ))}
                                 </div>
-
                                 <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
-                                    <button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-                                        Xong ({selected.length})
-                                    </button>
+                                    <button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Xong ({selected.length})</button>
                                 </div>
                             </div>
-                        </div>,
-                        document.body
+                        </div>, document.body
                     )}
                 </div>
             );
@@ -191,6 +186,43 @@
                 <button onClick={onClose} className="text-slate-400 hover:text-white"><X size={16}/></button>
             </div>
         );
+
+        // NEW: MOCK DATA MODAL
+        const MockDataModal = ({ isOpen, onClose, onGenerate }) => {
+            const [quantity, setQuantity] = useState(10);
+            const [scenario, setScenario] = useState('random');
+
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2"><Database size={24} className="text-indigo-600"/> Khởi tạo dữ liệu mẫu</h3>
+                        
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-sm font-bold text-slate-600 mb-2 block">Số lượng: <span className="text-indigo-600 text-lg">{quantity}</span></label>
+                                <input type="range" min="1" max="50" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"/>
+                                <div className="flex justify-between text-[10px] text-slate-400 mt-1"><span>1</span><span>50</span></div>
+                            </div>
+                            <div>
+                                <label className="text-sm font-bold text-slate-600 mb-2 block">Kịch bản (Scenario)</label>
+                                <select className="w-full p-3 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-indigo-500" value={scenario} onChange={e => setScenario(e.target.value)}>
+                                    <option value="random">Ngẫu nhiên tổng hợp</option>
+                                    <option value="event">Mùa sự kiện cao điểm</option>
+                                    <option value="admission">Tuyển sinh & Truyền thông</option>
+                                    <option value="internal">Công việc hành chính nội bộ</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 flex gap-3">
+                            <button onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Hủy</button>
+                            <button onClick={() => { onGenerate(quantity, scenario); onClose(); }} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700">Tạo ngay</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
         const DeleteModal = ({ isOpen, onConfirm, onCancel, count }) => {
             if (!isOpen) return null;
@@ -222,16 +254,16 @@
             const [activeTab, setActiveTab] = useState('dashboard');
             const [tasks, setTasks] = useState([]);
             const [deleteModal, setDeleteModal] = useState({ open: false, ids: [] });
+            const [mockModalOpen, setMockModalOpen] = useState(false); // State for Mock Modal
             const [isAiLoading, setIsAiLoading] = useState(false);
             const [aiAnalysis, setAiAnalysis] = useState("");
             const [selectedIds, setSelectedIds] = useState([]);
+            const [lastSelectedId, setLastSelectedId] = useState(null); // Track last click for Shift Select
             const [toast, setToast] = useState(null);
             const deletedDataRef = useRef([]);
             const [sidebarOpen, setSidebarOpen] = useState(true);
 
             const [colWidths, setColWidths] = useState({ check: 50, actions: 60, admin: 140, task: 320, overall: 160, unit: 180, brand: 350, operation: 350, media: 350 });
-            
-            // Filters
             const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
             const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
             
@@ -262,7 +294,38 @@
             const debouncedUpdate = useCallback(_.debounce(async (id, data) => { if(!db) return; try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } catch (e) { console.error(e); } }, 800), []);
             const handleUpdateTask = (id, updatedData) => { setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t)); debouncedUpdate(id, updatedData); };
 
-            const handleSelectRow = (id) => { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); };
+            // --- SHIFT CLICK SELECTION LOGIC ---
+            const handleSelectRow = (e, id) => {
+                // Determine current state of this row (is it going to be selected or deselected?)
+                const isSelecting = !selectedIds.includes(id);
+                
+                if (e.shiftKey && lastSelectedId) {
+                    const currentIndex = filteredTasks.findIndex(t => t.id === id);
+                    const lastIndex = filteredTasks.findIndex(t => t.id === lastSelectedId);
+                    
+                    if (currentIndex !== -1 && lastIndex !== -1) {
+                        const start = Math.min(currentIndex, lastIndex);
+                        const end = Math.max(currentIndex, lastIndex);
+                        const rangeIds = filteredTasks.slice(start, end + 1).map(t => t.id);
+                        
+                        if (isSelecting) {
+                            setSelectedIds(prev => [...new Set([...prev, ...rangeIds])]);
+                        } else {
+                            // If deselecting, we remove the range
+                            setSelectedIds(prev => prev.filter(pid => !rangeIds.includes(pid)));
+                        }
+                    }
+                } else {
+                    // Normal Click
+                    if (isSelecting) {
+                        setSelectedIds(prev => [...prev, id]);
+                    } else {
+                        setSelectedIds(prev => prev.filter(i => i !== id));
+                    }
+                }
+                setLastSelectedId(id);
+            };
+
             const handleSelectAll = (filteredData) => { if (selectedIds.length === filteredData.length) setSelectedIds([]); else setSelectedIds(filteredData.map(t => t.id)); };
 
             const confirmBulkDelete = async () => {
@@ -292,39 +355,44 @@
                 } catch (e) { alert("Lỗi hoàn tác: " + e.message); }
             };
 
-            const createMockData = async () => {
+            // IMPROVED MOCK DATA GENERATOR
+            const generateMockData = async (qty, type) => {
                 if(!db) return;
                 const batch = writeBatch(db);
                 try {
-                    const mockScenarios = [
-                        { task: "Lễ Khai giảng K38", unit: "Toàn trường", cats: ["Hỗ trợ tổ chức sự kiện", "Chụp ảnh"], status: "Đang xử lý" },
-                        { task: "Tuyển sinh Đại học 2026", unit: "P. Marketing và Truyền thông", cats: ["Thiết kế", "Đưa tin"], status: "Đang xử lý" },
-                        { task: "Hội thảo AI trong Y tế", unit: "BM Trí tuệ nhân tạo", cats: ["Thiết kế", "Livestream"], status: "Chưa bắt đầu" },
-                        { task: "Ngày hội việc làm Job Fair", unit: "P. Công tác chính trị sinh viên", cats: ["Hậu cần", "Quay chụp"], status: "Gấp" },
-                        { task: "Cuộc thi Rung Chuông Vàng", unit: "Đoàn Thanh niên - Hội sinh viên", cats: ["Thiết kế", "Duyệt thiết kế"], status: "Hoàn thành" }
-                    ];
+                    const tasksPool = {
+                        event: ["Lễ Khai giảng", "Ngày hội Job Fair", "Gala Chào Tân SV", "Hội thảo AI", "Lễ Tốt nghiệp", "Cuộc thi Hùng biện"],
+                        admission: ["Tuyển sinh K39", "Livestream tư vấn", "Ngày hội Open Day", "Chạy Ads tuyển sinh", "Thiết kế Brochure"],
+                        internal: ["Mua sắm thiết bị", "Trang trí Tết", "Họp giao ban", "Đào tạo nhân sự", "Báo cáo quý"],
+                        random: [] 
+                    };
+                    // Fill random if empty
+                    tasksPool.random = [...tasksPool.event, ...tasksPool.admission, ...tasksPool.internal];
 
-                    mockScenarios.forEach((scenario, index) => {
+                    const selectedPool = tasksPool[type] || tasksPool.random;
+
+                    for(let i = 0; i < qty; i++) {
                         const newRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'));
-                        const d = new Date(); d.setDate(d.getDate() + (Math.random() * 30 - 10));
+                        const d = new Date(); d.setDate(d.getDate() + (Math.random() * 60 - 30));
                         const dateStr = d.toISOString().split('T')[0];
-
+                        const taskName = selectedPool[Math.floor(Math.random() * selectedPool.length)] + " " + Math.floor(Math.random() * 100);
+                        
                         batch.set(newRef, {
                             orderDate: dateStr,
-                            paperStatus: Math.random() > 0.5 ? "Đã duyệt" : "Chưa duyệt",
-                            taskName: scenario.task,
-                            overallStatus: scenario.status,
-                            unit: scenario.unit,
-                            categories: scenario.cats,
-                            brandTask: { name: "Triển khai content", deadline: dateStr, status: "Đang xử lý", link: "" },
-                            operationTask: { name: "Chuẩn bị hậu cần", deadline: dateStr, status: "Chưa bắt đầu", link: "" },
-                            mediaTask: { name: "Sản xuất hình ảnh", deadline: dateStr, status: "Không có task", link: "" },
+                            paperStatus: PAPER_STATUS[Math.floor(Math.random() * PAPER_STATUS.length)],
+                            taskName: taskName,
+                            overallStatus: OVERALL_STATUS[Math.floor(Math.random() * OVERALL_STATUS.length)],
+                            unit: DEPARTMENTS[Math.floor(Math.random() * DEPARTMENTS.length)],
+                            categories: [CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]],
+                            brandTask: { name: "Triển khai content", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" },
+                            operationTask: { name: "Chuẩn bị hậu cần", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" },
+                            mediaTask: { name: "Sản xuất hình ảnh", deadline: dateStr, status: TASK_STATUS[Math.floor(Math.random() * TASK_STATUS.length)], link: "" },
                             createdAt: serverTimestamp()
                         });
-                    });
+                    }
 
                     await batch.commit();
-                    alert("Đã tạo dữ liệu giả lập thành công!");
+                    alert(`Đã khởi tạo ${qty} dòng dữ liệu mẫu (${type})!`);
                 } catch (e) { alert("Lỗi: " + e.message); }
             };
 
@@ -432,13 +500,14 @@
                 <div className="flex font-sans h-full">
                     {isAiLoading && (<div className="fixed inset-0 z-[20000] bg-white/60 backdrop-blur-sm flex items-center justify-center flex-col gap-4"><div className="animate-spin text-indigo-600"><RefreshCw size={48}/></div><p className="font-black text-indigo-950 uppercase tracking-widest text-sm animate-pulse">✨ Trí tuệ nhân tạo đang xử lý...</p></div>)}
                     <DeleteModal isOpen={deleteModal.open} count={deleteModal.ids.length} onCancel={() => setDeleteModal({ open: false, ids: [] })} onConfirm={confirmBulkDelete} />
+                    {mockModalOpen && <MockDataModal isOpen={mockModalOpen} onClose={() => setMockModalOpen(false)} onGenerate={generateMockData} />}
                     {toast && <Toast message={toast.message} onUndo={toast.undoable ? handleUndo : undefined} onClose={() => setToast(null)} />}
                     
                     {/* SIDEBAR COLLAPSIBLE */}
                     <aside className={`sidebar-transition fixed h-full flex flex-col z-[100] text-white shadow-2xl bg-[#0F172A] ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'}`}>
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.13</span></h1></div>
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.14</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1 overflow-hidden whitespace-nowrap">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
-                        <div className="p-4 border-t border-slate-800 overflow-hidden whitespace-nowrap"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu</button></div>
+                        <div className="p-4 border-t border-slate-800 overflow-hidden whitespace-nowrap"><button onClick={() => setMockModalOpen(true)} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu</button></div>
                     </aside>
 
                     {/* MAIN CONTENT */}
@@ -454,7 +523,6 @@
                             
                             {/* GLOBAL FILTERS */}
                             <div className="flex items-center gap-3">
-                                {/* Unit Filter */}
                                 <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2 h-10">
                                     <div className="px-2 text-indigo-600"><Building2 size={16}/></div>
                                     <select className="text-xs font-bold text-slate-600 outline-none bg-transparent border-none w-40" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}>
@@ -463,7 +531,6 @@
                                     </select>
                                 </div>
 
-                                {/* Date Filter */}
                                 <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2 h-10">
                                     <div className="px-2 text-indigo-600"><Calendar size={16}/></div>
                                     <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} />
@@ -535,7 +602,7 @@
                                        <tbody className="divide-y divide-slate-100">
                                           {filteredTasks.map(task => (
                                              <tr key={task.id} className={`transition-colors divide-x divide-slate-100 ${selectedIds.includes(task.id) ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                                                <td className="px-4 py-4 sticky-col-0 text-center z-20"><input type="checkbox" checked={selectedIds.includes(task.id)} onChange={() => handleSelectRow(task.id)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></td>
+                                                <td className="px-4 py-4 sticky-col-0 text-center z-20"><input type="checkbox" checked={selectedIds.includes(task.id)} onChange={(e) => handleSelectRow(e, task.id)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></td>
                                                 <td className="px-4 py-4 sticky-col-1 text-center z-20"><button onClick={() => setDeleteModal({ open: true, ids: [task.id] })} className="p-2 text-slate-300 hover:text-rose-600 transition-all rounded-lg hover:bg-rose-50"><Trash2 size={16}/></button></td>
                                                 <td className="px-6 py-4 sticky-col-2 z-20 text-[10px]"><input type="date" className="w-full border-none bg-transparent font-bold p-0 mb-1 focus:ring-0 outline-none" value={task.orderDate} onChange={e => handleUpdateTask(task.id, {orderDate: e.target.value})} /><select className={`text-[9px] w-full border-none p-0 focus:ring-0 font-black uppercase outline-none ${task.paperStatus === 'Hiệu trưởng duyệt' ? 'text-indigo-600' : task.paperStatus === 'Đã duyệt' ? 'text-emerald-600' : 'text-rose-500'}`} value={task.paperStatus} onChange={e => handleUpdateTask(task.id, {paperStatus: e.target.value})}>{PAPER_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
                                                 <td className="px-6 py-4 sticky-col-3 z-20 !overflow-visible"><input className="text-xs w-full border-none bg-transparent font-black text-slate-900 p-0 mb-1 focus:ring-0 truncate outline-none" value={task.taskName} onChange={e => handleUpdateTask(task.id, {taskName: e.target.value})} /><MultiSelectModal inline options={CATEGORIES} selected={task.categories} onChange={v => handleUpdateTask(task.id, {categories: v})} /></td>
