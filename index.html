@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MarCom Dashboard Pro v12.17 (Mobile & Sticky Fix)</title>
+    <title>MarCom Dashboard Pro v12.18 (Stable Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -32,60 +32,23 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         
-        /* --- STICKY HEADER FIX (V12.17) --- */
-        
-        /* 1. Mặc định tất cả Header đều dính lên trên cùng */
-        thead th {
-            position: sticky;
-            top: 0;
-            z-index: 40; /* Cao hơn nội dung bảng (z-index: 0-30) */
-            background-color: #f8fafc;
-            box-shadow: 0 1px 0px #e2e8f0; 
-        }
+        /* Sticky Columns Logic */
+        thead th { position: sticky; top: 0; z-index: 40; background-color: #f8fafc; box-shadow: 0 1px 0px #e2e8f0; }
+        .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 { position: sticky; z-index: 30; background-color: white; border-right: 1px solid #e2e8f0; }
+        thead th.sticky-col-0, thead th.sticky-col-1, thead th.sticky-col-2, thead th.sticky-col-3, thead th.sticky-col-4 { z-index: 50 !important; background-color: #f8fafc; }
 
-        /* 2. Các cột dính bên trái (Sticky Left) */
-        /* Cần z-index cao hơn body cells nhưng thấp hơn giao điểm góc trái trên */
-        .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 {
-            position: sticky;
-            z-index: 30; /* Đè lên nội dung thường khi cuộn ngang */
-            background-color: white;
-            border-right: 1px solid #e2e8f0;
-        }
-
-        /* 3. Giao điểm (Góc trái trên cùng) - Header của các cột dính */
-        /* Phải có z-index cao nhất để không bị cái gì đè lên khi cuộn cả 2 chiều */
-        thead th.sticky-col-0, 
-        thead th.sticky-col-1, 
-        thead th.sticky-col-2, 
-        thead th.sticky-col-3, 
-        thead th.sticky-col-4 {
-            z-index: 50 !important; 
-            background-color: #f8fafc;
-        }
-
-        /* Tinh chỉnh vị trí cột trái */
         .sticky-col-0 { left: 0; }
         .sticky-col-1 { left: var(--col-width-check, 40px); }
         .sticky-col-2 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px)); }
         .sticky-col-3 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px)); }
         .sticky-col-4 { left: calc(var(--col-width-check, 40px) + var(--col-width-actions, 50px) + var(--col-width-admin, 140px) + var(--col-width-task, 250px)); border-right: 2px solid #94a3b8; }
 
-        /* Row Hover Effect cho cột dính */
         tr:hover td.sticky-col-0, tr:hover td.sticky-col-1, tr:hover td.sticky-col-2, tr:hover td.sticky-col-3, tr:hover td.sticky-col-4 { background-color: #f8fafc; }
         tr.bg-indigo-50 td.sticky-col-0, tr.bg-indigo-50 td.sticky-col-1, tr.bg-indigo-50 td.sticky-col-2, tr.bg-indigo-50 td.sticky-col-3, tr.bg-indigo-50 td.sticky-col-4 { background-color: #eef2ff; }
 
-        /* --- MOBILE OPTIMIZATION (V12.17) --- */
         @media (max-width: 1024px) {
-            /* Tắt dính cột trái trên mobile để bảng thoáng hơn, chỉ giữ dính Header */
-            .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 { 
-                position: static !important; 
-                border-right: none !important; 
-                box-shadow: none !important;
-            }
-            /* Giữ cột checkbox nhỏ gọn */
+            .sticky-col-0, .sticky-col-1, .sticky-col-2, .sticky-col-3, .sticky-col-4 { position: static !important; border-right: none !important; box-shadow: none !important; }
             th.sticky-col-0, td.sticky-col-0 { width: 40px !important; min-width: 40px !important; max-width: 40px !important; }
-            
-            /* Header vẫn dính lên top */
             thead th { position: sticky; top: 0; z-index: 40; }
         }
 
@@ -99,7 +62,6 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        /* Sidebar Transition: Translate -100% để ẩn hoàn toàn logo */
         .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .main-transition { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
@@ -229,8 +191,6 @@
             const [lastSelectedId, setLastSelectedId] = useState(null);
             const [toast, setToast] = useState(null);
             const deletedDataRef = useRef([]);
-            
-            // Sidebar logic
             const [sidebarOpen, setSidebarOpen] = useState(true);
             const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
@@ -291,7 +251,7 @@
 
             const chartDataOverall = useMemo(() => { const counts = {}; OVERALL_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t.overallStatus || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); }, [filteredTasks]);
             const teamVolumeData = useMemo(() => [{ name: 'Brand', value: filteredTasks.filter(t => t.brandTask?.status !== 'Không có task').length }, { name: 'Operation', value: filteredTasks.filter(t => t.operationTask?.status !== 'Không có task').length }, { name: 'Media', value: filteredTasks.filter(t => t.mediaTask?.status !== 'Không có task').length }], [filteredTasks]);
-            const teamStats = (teamKey) => { const counts = {}; TASK_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); }, [filteredTasks]);
+            const teamStats = (teamKey) => { const counts = {}; TASK_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); };
             const teamUrgent = (teamKey) => { const today = new Date(); const limit = new Date(); limit.setDate(today.getDate() + 3); return filteredTasks.filter(t => { const dStr = t[`${teamKey}Task`]?.deadline; if (!dStr) return false; const deadlineDate = new Date(dStr); return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không có task'; }); };
             const chartDataCategory = useMemo(() => { const data = CATEGORIES.map(cat => ({ name: cat, completed: 0, pending: 0 })); filteredTasks.forEach(t => { const isCompleted = t.overallStatus === "Hoàn thành"; t.categories.forEach(cat => { const idx = data.findIndex(d => d.name === cat); if (idx !== -1) { if (isCompleted) data[idx].completed++; else data[idx].pending++; } }); }); return data; }, [filteredTasks]);
 
