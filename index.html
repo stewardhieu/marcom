@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MarCom System v13.3 (Stable Fix)</title>
+    <title>MarCom System v13.4 (Final Stable)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -77,10 +77,10 @@
         import { initializeApp } from 'firebase/app';
         import { getFirestore, collection, addDoc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch, query, orderBy, limit } from 'firebase/firestore';
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
-        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Building2, LogOut, Shield, UserCog, History, UserCheck } from 'lucide-react';
+        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Filter, Building2, LogOut, Shield, UserCog, History, UserCheck } from 'lucide-react';
         import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, PieChart, Pie } from 'recharts';
 
-        // --- CONFIG ---
+        // --- FIREBASE SETUP ---
         const firebaseConfig = {
             apiKey: "AIzaSyDNdBlMZL42nkWc7W1OtgkWvkxKCwxKCjQ",
             authDomain: "marcom-dashboard-test.firebaseapp.com",
@@ -90,34 +90,19 @@
             appId: "1:840436404750:web:783b44fa370f94b4dba25f"
         };
         const appId = 'marcom-hub-pro-v12';
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- DATA CONSTANTS ---
+        // --- CONSTANTS ---
         const DEPARTMENTS = [ "Văn phòng trường", "P. Marketing và Truyền thông", "P. Đào tạo", "P. Hợp tác quốc tế", "K. Công nghệ thông tin", "K. Cơ khí - Cơ điện tử", "K. Điện - Điện tử", "Toàn trường" ];
         const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
         const OVERALL_STATUS = ["Chờ duyệt", "Gấp", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
         const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
         const STATUS_COLOR_MAP = { "Chờ duyệt": "#a855f7", "Gấp": "#ef4444", "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", "Không có task": "#cbd5e1" };
-        const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
-        // --- COMPONENTS ---
-        const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
-            const [isOpen, setIsOpen] = useState(false);
-            const handleToggle = (option) => onChange(selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]);
-            return (
-                <div className="w-full">
-                    <div onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
-                        <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
-                    </div>
-                    {isOpen && ReactDOM.createPortal(<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setIsOpen(false)}><div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in" onClick={e => e.stopPropagation()}><div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 className="text-lg font-black text-slate-800 uppercase">Phân loại</h3><button onClick={() => setIsOpen(false)}><X size={20}/></button></div><div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto custom-scrollbar p-1">{options.map(o => (<div key={o} onClick={() => handleToggle(o)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer ${selected.includes(o) ? 'border-indigo-600 bg-indigo-50 font-bold' : 'border-slate-100'}`}><div className={`w-5 h-5 rounded border flex items-center justify-center ${selected.includes(o) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>{selected.includes(o) && <Check size={14} className="text-white"/>}</div><span className="text-xs">{o}</span></div>))}</div><div className="mt-6 pt-4 border-t flex justify-end"><button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold">Xong</button></div></div></div>, document.body)}
-                </div>
-            );
-        };
-
+        // --- LOGIN COMPONENT ---
         const LoginScreen = () => {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -128,7 +113,7 @@
             };
             return (
                 <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
-                    <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md animate-in zoom-in text-center">
+                    <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md text-center animate-in zoom-in">
                         <div className="mx-auto w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg mb-6"><Briefcase size={32} className="text-white"/></div>
                         <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase tracking-tighter">MarCom Portal</h2>
                         {error && <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-xs font-bold mb-4">{error}</div>}
@@ -142,7 +127,20 @@
             );
         };
 
-        // --- MAIN APP ---
+        const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const handleToggle = (option) => onChange(selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]);
+            return (
+                <div className="w-full">
+                    <div onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
+                        <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
+                    </div>
+                    {isOpen && ReactDOM.createPortal(<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setIsOpen(false)}><div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in" onClick={e => e.stopPropagation()}><div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 className="text-lg font-black text-slate-800 uppercase">Phân loại</h3><button onClick={() => setIsOpen(false)}><X size={20}/></button></div><div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto custom-scrollbar p-1">{options.map(o => (<div key={o} onClick={() => handleToggle(o)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer ${selected.includes(o) ? 'border-indigo-600 bg-indigo-50 font-bold' : 'border-slate-100'}`}><div className={`w-5 h-5 rounded border flex items-center justify-center ${selected.includes(o) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>{selected.includes(o) && <Check size={14} className="text-white"/>}</div><span className="text-xs">{o}</span></div>))}</div><div className="mt-6 pt-4 border-t flex justify-end"><button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold">Xong</button></div></div></div>, document.body)}
+                </div>
+            );
+        };
+
+        // --- APP COMPONENT ---
         function App() {
             const [user, setUser] = useState(null);
             const [role, setRole] = useState('editor');
@@ -153,11 +151,10 @@
             const [sidebarOpen, setSidebarOpen] = useState(true);
             const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
             const [selectedIds, setSelectedIds] = useState([]);
-            const [toast, setToast] = useState(null);
             const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
             const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
+            const [formData, setFormData] = useState({ orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } });
 
-            // Helper inside App scope to avoid ReferenceError
             const getColorClasses = (color) => { 
                 const map = { indigo: 'bg-indigo-50 text-indigo-600', emerald: 'bg-emerald-50 text-emerald-600', rose: 'bg-rose-50 text-rose-600', amber: 'bg-amber-50 text-amber-600', blue: 'bg-blue-50 text-blue-600' }; 
                 return map[color] || 'bg-slate-50 text-slate-600'; 
@@ -165,28 +162,17 @@
 
             const logAction = async (action, details) => {
                 if (!user) return;
-                try {
-                    await addDoc(collection(db, 'logs'), {
-                        timestamp: serverTimestamp(),
-                        user: user.email,
-                        action: action,
-                        details: JSON.stringify(details)
-                    });
-                } catch(e) { console.error(e); }
+                try { await addDoc(collection(db, 'logs'), { timestamp: serverTimestamp(), user: user.email, action: action, details: JSON.stringify(details) }); } catch(e) { console.error(e); }
             };
 
             useEffect(() => {
                 return onAuthStateChanged(auth, async (u) => {
                     if (u) {
                         setUser(u);
-                        // FIX: Đường dẫn chẵn cho Firestore (collection -> doc)
                         const userRef = doc(db, 'users', u.email); 
                         const snap = await getDoc(userRef);
-                        if (snap.exists()) {
-                            setRole(snap.data().role);
-                        } else {
-                            // Nếu user chưa tồn tại trong bảng phân quyền, mặc định tạo mới là editor
-                            // Trừ khi chưa có ai thì gán Admin (cho người đầu tiên setup)
+                        if (snap.exists()) { setRole(snap.data().role); } 
+                        else {
                             const usersSnap = await getDocs(collection(db, 'users'));
                             const defaultRole = usersSnap.empty ? 'admin' : 'editor';
                             await setDoc(userRef, { role: defaultRole, email: u.email });
@@ -201,12 +187,33 @@
                 const unsubTasks = onSnapshot(collection(db, 'marcom_v11_tasks'), (sn) => {
                     setTasks(sn.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate)));
                 });
+                let unsubLogs = () => {}, unsubUsers = () => {};
                 if (role === 'admin') {
-                    onSnapshot(query(collection(db, 'logs'), orderBy('timestamp', 'desc'), limit(50)), (sn) => setLogs(sn.docs.map(d => ({ id: d.id, ...d.data() }))));
-                    onSnapshot(collection(db, 'users'), (sn) => setUsersList(sn.docs.map(d => ({ id: d.id, ...d.data() }))));
+                    unsubLogs = onSnapshot(query(collection(db, 'logs'), orderBy('timestamp', 'desc'), limit(50)), (sn) => setLogs(sn.docs.map(d => ({ id: d.id, ...d.data() }))));
+                    unsubUsers = onSnapshot(collection(db, 'users'), (sn) => setUsersList(sn.docs.map(d => ({ id: d.id, ...d.data() }))));
                 }
-                return () => unsubTasks();
+                return () => { unsubTasks(); unsubLogs(); unsubUsers(); };
             }, [user, role]);
+
+            // FIX: handleAddTask must be defined inside App scope
+            const handleAddTask = async (e) => {
+                e.preventDefault();
+                try {
+                    const docRef = await addDoc(collection(db, 'marcom_v11_tasks'), { ...formData, createdAt: serverTimestamp() });
+                    logAction('CREATE_TASK', { id: docRef.id, name: formData.taskName });
+                    setFormData({ ...formData, taskName: '' });
+                    setActiveTab('list');
+                    alert("Đã tạo công việc thành công!");
+                } catch (err) { alert("Lỗi: " + err.message); }
+            };
+
+            const handleDeleteTask = async (id) => {
+                if (role !== 'admin') return alert("Chỉ Admin mới được xóa!");
+                if (confirm("Xác nhận xóa dòng này?")) {
+                    await deleteDoc(doc(db, 'marcom_v11_tasks', id));
+                    logAction('DELETE_TASK', { id });
+                }
+            };
 
             const handleUpdateTask = (id, data) => {
                 updateDoc(doc(db, 'marcom_v11_tasks', id), data);
@@ -218,21 +225,29 @@
                 const unitG = !globalFilters.unit || t.unit === globalFilters.unit;
                 const dateC = !colFilters.date || t.orderDate.includes(colFilters.date);
                 const taskC = !colFilters.task || t.taskName?.toLowerCase().includes(colFilters.task.toLowerCase());
-                return dateG && unitG && dateC && taskC;
+                const unitC = !colFilters.unit || t.unit?.toLowerCase().includes(colFilters.unit.toLowerCase());
+                const overallC = !colFilters.overall || t.overallStatus === colFilters.overall;
+                return dateG && unitG && dateC && taskC && unitC && overallC;
             }), [tasks, globalFilters, colFilters]);
 
             const chartOverall = OVERALL_STATUS.map(s => ({ name: s, value: filteredTasks.filter(t => t.overallStatus === s).length }));
-            const teamStats = (key) => TASK_STATUS.map(s => ({ name: s, value: filteredTasks.filter(t => t[`${key}Task`]?.status === s).length }));
+            const chartDataCategory = CATEGORIES.map(cat => ({
+                name: cat,
+                completed: filteredTasks.filter(t => t.categories?.includes(cat) && t.overallStatus === "Hoàn thành").length,
+                pending: filteredTasks.filter(t => t.categories?.includes(cat) && t.overallStatus !== "Hoàn thành").length
+            }));
+
+            const getTeamStats = (key) => TASK_STATUS.map(s => ({ name: s, value: tasks.filter(t => t[`${key}Task`]?.status === s).length }));
+            const teamUrgent = (key) => tasks.filter(t => t[`${key}Task`]?.status !== 'Hoàn thành' && t[`${key}Task`]?.status !== 'Không có task').slice(0, 5);
 
             if (!user) return <LoginScreen />;
 
             return (
                 <div className="flex h-full overflow-hidden bg-[#F1F5F9]">
-                    {/* SIDEBAR */}
                     <aside className={`sidebar-transition fixed inset-y-0 left-0 z-[100] bg-[#0F172A] text-white w-64 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                         <div className="p-8 border-b border-slate-800 flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg text-white"><Briefcase size={24}/></div>
-                            <div className="flex flex-col"><span className="font-black text-lg">MarCom</span><span className="text-[10px] text-slate-400 font-bold uppercase">System v13.3</span></div>
+                            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg"><Briefcase size={24}/></div>
+                            <div className="flex flex-col"><span className="font-black text-lg">MarCom</span><span className="text-[10px] text-slate-400 font-bold uppercase">System v13.4</span></div>
                         </div>
                         <nav className="p-4 space-y-2">
                             {[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (
@@ -240,105 +255,97 @@
                             ))}
                             {role === 'admin' && <button onClick={() => setActiveTab('admin')} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === 'admin' ? 'bg-indigo-600 shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><Shield size={18}/> Quản trị</button>}
                         </nav>
-                        <div className="absolute bottom-0 w-full p-6 border-t border-slate-800">
-                            <div className="text-[10px] font-bold text-slate-500 mb-2 truncate uppercase tracking-tighter">{user.email}</div>
-                            <button onClick={() => signOut(auth)} className="w-full py-3 bg-slate-800 hover:bg-rose-900/40 hover:text-rose-400 text-slate-400 text-xs font-bold rounded-xl transition-all">Đăng xuất</button>
+                        <div className="absolute bottom-0 w-full p-6 border-t border-slate-800 bg-[#0F172A]">
+                            <div className="text-[10px] font-bold text-slate-500 mb-2 truncate uppercase">{user.email} ({role})</div>
+                            <button onClick={() => signOut(auth)} className="w-full py-3 bg-slate-800 hover:bg-rose-900/40 text-slate-400 text-xs font-bold rounded-xl transition-all">Đăng xuất</button>
                         </div>
                     </aside>
 
-                    {/* MAIN */}
-                    <main className={`flex-1 flex flex-col h-full sidebar-transition ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
-                        <header className="p-4 md:p-6 bg-white border-b border-slate-200 flex justify-between items-center sticky top-0 z-[60]">
+                    <main className={`main-transition flex-1 flex flex-col h-full ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+                        <header className="p-6 bg-white border-b border-slate-200 flex justify-between items-center sticky top-0 z-[60]">
                             <div className="flex items-center gap-4">
-                                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 bg-slate-100 rounded-full hover:bg-indigo-50 hover:text-indigo-600">
+                                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 bg-slate-100 rounded-full hover:bg-indigo-50 hover:text-indigo-600 transition-all">
                                     {sidebarOpen ? <ChevronLeft size={20}/> : <Menu size={20}/>}
                                 </button>
-                                <h2 className="text-lg md:text-xl font-black uppercase tracking-tight text-slate-800">{activeTab}</h2>
+                                <h2 className="text-xl font-black uppercase tracking-tight text-slate-800">{activeTab}</h2>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <div className="hidden md:flex bg-slate-100 p-1 rounded-xl border">
-                                    <input type="date" className="bg-transparent text-[10px] p-2 font-bold outline-none" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})}/>
-                                    <input type="date" className="bg-transparent text-[10px] p-2 font-bold outline-none" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})}/>
-                                </div>
+                            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                <input type="date" className="bg-transparent text-xs p-2 font-bold outline-none" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})}/>
+                                <span className="self-center text-slate-400 px-1">-</span>
+                                <input type="date" className="bg-transparent text-xs p-2 font-bold outline-none" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})}/>
                             </div>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar">
+                            {/* DASHBOARD */}
                             {activeTab === 'dashboard' && (
-                                <div className="space-y-8 animate-in fade-in">
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="space-y-10 animate-in fade-in">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                         {[{ label: 'Tổng Task', val: tasks.length, color: 'indigo', icon: TableIcon }, { label: 'Hoàn thành', val: tasks.filter(t => t.overallStatus === 'Hoàn thành').length, color: 'emerald', icon: CheckCircle2 }, { label: 'Đang xử lý', val: tasks.filter(t => t.overallStatus === 'Đang xử lý').length, color: 'amber', icon: Clock }, { label: 'Gấp', val: tasks.filter(t => t.overallStatus === 'Gấp').length, color: 'rose', icon: AlertCircle }].map((kpi, i) => (
-                                            <div key={i} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200"><div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-4 ${getColorClasses(kpi.color)}`}><kpi.icon size={20}/></div><h4 className="text-slate-400 text-[10px] font-black uppercase mb-1">{kpi.label}</h4><p className="text-3xl font-black text-slate-900">{kpi.val}</p></div>
+                                            <div key={i} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm"><div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-4 ${getColorClasses(kpi.color)}`}><kpi.icon size={20}/></div><h4 className="text-slate-400 text-[10px] font-black uppercase mb-1">{kpi.label}</h4><p className="text-3xl font-black text-slate-900">{kpi.val}</p></div>
                                         ))}
                                     </div>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        <div className="bg-white p-6 rounded-3xl border h-[350px] flex flex-col items-center">
-                                            <h4 className="text-[10px] font-black uppercase mb-4 text-slate-400">Trạng thái tổng quát</h4>
-                                            <ResponsiveContainer width="100%" height="90%"><BarChart data={chartOverall}><XAxis dataKey="name" style={{fontSize: '9px'}} /><Tooltip /><Bar dataKey="value" barSize={40} radius={[4, 4, 0, 0]}>{chartOverall.map((s, i) => <Cell key={i} fill={STATUS_COLOR_MAP[s.name]} />)}</Bar></BarChart></ResponsiveContainer>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                        <div className="bg-white p-8 rounded-3xl border h-[400px] flex flex-col items-center">
+                                            <h4 className="text-xs font-black uppercase mb-8 text-slate-400">Trạng thái tổng</h4>
+                                            <ResponsiveContainer width="100%" height="90%"><BarChart data={chartOverall}><XAxis dataKey="name" style={{fontSize: '9px'}} /><Tooltip /><Bar dataKey="value" barSize={40} radius={[6, 6, 0, 0]}>{chartOverall.map((s, i) => <Cell key={i} fill={STATUS_COLOR_MAP[s.name]} />)}</Bar></BarChart></ResponsiveContainer>
                                         </div>
-                                        <div className="bg-white p-6 rounded-3xl border h-[350px] flex flex-col items-center">
-                                            <h4 className="text-[10px] font-black uppercase mb-4 text-slate-400">Khối lượng Team</h4>
-                                            <ResponsiveContainer width="100%" height="90%"><BarChart data={[{ name: 'Brand', value: tasks.filter(t => t.brandTask?.status !== 'Không có task').length }, { name: 'Operation', value: tasks.filter(t => t.operationTask?.status !== 'Không có task').length }, { name: 'Media', value: tasks.filter(t => t.mediaTask?.status !== 'Không có task').length }]} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={80} style={{fontSize: '10px', fontWeight: 800}}/><Tooltip/><Bar dataKey="value" barSize={25} radius={[0, 4, 4, 0]}>{TEAM_COLORS && ['#8b5cf6', '#f97316', '#0ea5e9'].map((c, i) => <Cell key={i} fill={c}/>)}</Bar></BarChart></ResponsiveContainer>
+                                        <div className="bg-white p-8 rounded-3xl border h-[400px] flex flex-col items-center text-center">
+                                            <h4 className="text-xs font-black uppercase mb-8 text-slate-400">Tiến độ theo hạng mục</h4>
+                                            <ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataCategory}><XAxis dataKey="name" style={{fontSize: '8px'}} /><YAxis style={{fontSize: '9px'}}/><Tooltip/><Legend wrapperStyle={{fontSize: '10px'}}/><Bar dataKey="completed" name="Xong" stackId="a" fill="#10b981"/><Bar dataKey="pending" name="Chưa xong" stackId="a" fill="#f59e0b"/></BarChart></ResponsiveContainer>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'admin' && role === 'admin' && (
-                                <div className="space-y-8 animate-in fade-in">
-                                    <div className="bg-white p-6 rounded-3xl border">
-                                        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tighter"><UserCog size={20} className="text-indigo-600"/> Phân quyền người dùng</h3>
-                                        <div className="space-y-3">
-                                            {usersList.map(u => (
-                                                <div key={u.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border">
-                                                    <span className="text-sm font-bold text-slate-700">{u.email}</span>
-                                                    <div className="flex gap-2">
-                                                        <span className={`px-2 py-1 rounded text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>{u.role}</span>
-                                                        {u.email !== user.email && <button onClick={() => handleRoleChange(u.id, u.role === 'admin' ? 'editor' : 'admin')} className="text-[9px] font-bold underline text-indigo-600">Sửa</button>}
-                                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {['brand', 'operation', 'media'].map(t => (
+                                            <div key={t} className="bg-white p-6 rounded-3xl border h-[400px] flex flex-col">
+                                                <h4 className="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest text-center underline">Team {t.toUpperCase()}</h4>
+                                                <ResponsiveContainer width="100%" height="150"><PieChart><Pie data={getTeamStats(t).filter(d => d.value > 0)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={50} innerRadius={35} paddingAngle={5}>{getTeamStats(t).map((e, idx) => <Cell key={idx} fill={STATUS_COLOR_MAP[e.name]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>
+                                                <div className="flex-1 overflow-y-auto custom-scrollbar pt-4 space-y-2">
+                                                    {teamUrgent(t).map(item => (<div key={item.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100"><div className="text-[10px] font-bold text-slate-700 truncate">{item.taskName}</div><div className="text-[9px] mt-1 text-indigo-500 font-bold">{item[`${t}Task`].status}</div></div>))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="bg-white p-6 rounded-3xl border h-[400px] flex flex-col">
-                                        <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tighter"><History size={20} className="text-orange-600"/> Nhật ký hệ thống</h3>
-                                        <div className="flex-1 overflow-y-auto space-y-2">
-                                            {logs.map(l => (
-                                                <div key={l.id} className="p-3 border-b text-[9px] font-mono"><span className="text-indigo-600 font-bold">{l.action}</span> | <span className="text-slate-400">{l.timestamp?.toDate().toLocaleString()}</span> | <span className="text-slate-600">{l.user}</span><br/><span className="text-slate-400">{l.details}</span></div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
 
+                            {/* LIST */}
                             {activeTab === 'list' && (
-                                <div className="bg-white rounded-3xl border h-full flex flex-col overflow-hidden animate-in fade-in">
+                                <div className="bg-white rounded-3xl border border-slate-200 h-full flex flex-col overflow-hidden animate-in fade-in">
                                     <div className="flex-1 overflow-auto custom-scrollbar">
                                         <table className="table-fixed text-left border-collapse" style={{ width: 'max-content' }}>
                                             <thead>
-                                                <tr className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 divide-x">
+                                                <tr className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 divide-x divide-slate-100">
                                                     <th className="px-4 py-4 sticky-col-0 text-center"><input type="checkbox" /></th>
                                                     <th className="px-4 py-4 sticky-col-1 text-center" style={{ width: 50 }}>#</th>
                                                     <th className="px-6 py-4 sticky-col-2" style={{ width: 140 }}>Hành chính</th>
                                                     <th className="px-6 py-4 sticky-col-3" style={{ width: 300 }}>Nội dung</th>
                                                     <th className="px-6 py-4 sticky-col-4" style={{ width: 150 }}>Trạng thái</th>
-                                                    <th className="px-6 py-4" style={{ width: 200 }}>Đơn vị</th>
+                                                    <th className="px-6 py-4" style={{ width: 180 }}>Đơn vị</th>
                                                     <th className="px-6 py-4 bg-purple-50" style={{ width: 350 }}>Brand Team</th>
                                                     <th className="px-6 py-4 bg-orange-50" style={{ width: 350 }}>Operation Team</th>
                                                     <th className="px-6 py-4 bg-sky-50" style={{ width: 350 }}>Media Team</th>
                                                 </tr>
+                                                <tr className="bg-white border-b divide-x divide-slate-100">
+                                                    <th className="sticky-col-0"></th><th className="sticky-col-1"></th>
+                                                    <th className="p-2 sticky-col-2"><input className="w-full p-1.5 text-[9px] border rounded" placeholder="Lọc ngày..." onChange={e => setColFilters({...colFilters, date: e.target.value})}/></th>
+                                                    <th className="p-2 sticky-col-3"><input className="w-full p-1.5 text-[9px] border rounded" placeholder="Lọc nội dung..." onChange={e => setColFilters({...colFilters, task: e.target.value})}/></th>
+                                                    <th className="p-2 sticky-col-4"><select className="w-full p-1.5 text-[9px] border rounded" onChange={e => setColFilters({...colFilters, overall: e.target.value})}><option value="">Tất cả</option>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></th>
+                                                    <th className="p-2"><input className="w-full p-1.5 text-[9px] border rounded" placeholder="Lọc đơn vị..." onChange={e => setColFilters({...colFilters, unit: e.target.value})}/></th>
+                                                    <th colSpan="3"></th>
+                                                </tr>
                                             </thead>
-                                            <tbody className="divide-y text-xs">
+                                            <tbody className="divide-y divide-slate-100 text-xs">
                                                 {filteredTasks.map(t => (
-                                                    <tr key={t.id} className="hover:bg-slate-50 transition-all divide-x">
+                                                    <tr key={t.id} className="hover:bg-slate-50 divide-x divide-slate-100 transition-colors">
                                                         <td className="px-4 py-4 sticky-col-0 text-center"><input type="checkbox" /></td>
-                                                        <td className="px-4 py-4 sticky-col-1 text-center">{role === 'admin' && <button onClick={() => handleDeleteTask(t.id)} className="text-slate-300 hover:text-rose-600"><Trash2 size={16}/></button>}</td>
-                                                        <td className="px-6 py-4 sticky-col-2 font-bold"><input type="date" className="bg-transparent w-full mb-1 outline-none" value={t.orderDate} onChange={e => handleUpdateTask(t.id, {orderDate: e.target.value})}/><select className="w-full text-[9px] outline-none" value={t.paperStatus} onChange={e => handleUpdateTask(t.id, {paperStatus: e.target.value})}>{PAPER_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
-                                                        <td className="px-6 py-4 sticky-col-3"><input className="w-full bg-transparent font-black mb-1 outline-none" value={t.taskName} onChange={e => handleUpdateTask(t.id, {taskName: e.target.value})}/><MultiSelectModal inline options={CATEGORIES} selected={t.categories || []} onChange={v => handleUpdateTask(t.id, {categories: v})} /></td>
-                                                        <td className="px-6 py-4 sticky-col-4 text-center"><select className="w-full font-black uppercase text-[10px] outline-none" style={{ color: STATUS_COLOR_MAP[t.overallStatus] }} value={t.overallStatus} onChange={e => handleUpdateTask(t.id, {overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
+                                                        <td className="px-4 py-4 sticky-col-1 text-center">{role === 'admin' && <button onClick={() => handleDeleteTask(t.id)} className="p-1.5 text-slate-300 hover:text-rose-600 transition-all rounded-lg hover:bg-rose-50"><Trash2 size={14}/></button>}</td>
+                                                        <td className="px-6 py-4 sticky-col-2"><input type="date" className="bg-transparent font-bold w-full mb-1 outline-none" value={t.orderDate} onChange={e => handleUpdateTask(t.id, {orderDate: e.target.value})}/><select className="w-full text-[9px] outline-none bg-transparent" value={t.paperStatus} onChange={e => handleUpdateTask(t.id, {paperStatus: e.target.value})}>{PAPER_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
+                                                        <td className="px-6 py-4 sticky-col-3"><input className="w-full bg-transparent font-black mb-1 outline-none truncate" value={t.taskName} onChange={e => handleUpdateTask(t.id, {taskName: e.target.value})}/><MultiSelectModal inline options={CATEGORIES} selected={t.categories || []} onChange={v => handleUpdateTask(t.id, {categories: v})} /></td>
+                                                        <td className="px-6 py-4 sticky-col-4 text-center"><select className="w-full font-black uppercase text-[10px] outline-none bg-transparent" style={{ color: STATUS_COLOR_MAP[t.overallStatus] }} value={t.overallStatus} onChange={e => handleUpdateTask(t.id, {overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
                                                         <td className="px-6 py-4"><select className="w-full outline-none font-bold text-slate-600 bg-transparent" value={t.unit} onChange={e => handleUpdateTask(t.id, {unit: e.target.value})}>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></td>
                                                         {['brand', 'operation', 'media'].map(k => (
-                                                            <td key={k} className={`px-6 py-4 ${k === 'brand' ? 'bg-purple-50/30' : k === 'operation' ? 'bg-orange-50/30' : 'bg-sky-50/30'}`}>
+                                                            <td key={k} className={`px-6 py-4 ${k === 'brand' ? 'bg-purple-50/20' : k === 'operation' ? 'bg-orange-50/20' : 'bg-sky-50/20'}`}>
                                                                 <input className="w-full bg-transparent font-bold mb-1 outline-none border-b border-transparent focus:border-slate-300" value={t[`${k}Task`]?.name || ''} onChange={e => handleUpdateTask(t.id, {[`${k}Task`]: {...t[`${k}Task`], name: e.target.value}})}/>
                                                                 <div className="flex gap-2"><input type="date" className="bg-transparent text-[10px] outline-none" value={t[`${k}Task`]?.deadline || ''} onChange={e => handleUpdateTask(t.id, {[`${k}Task`]: {...t[`${k}Task`], deadline: e.target.value}})}/><select className="bg-transparent text-[10px] font-black outline-none" value={t[`${k}Task`]?.status || 'Chưa bắt đầu'} onChange={e => handleUpdateTask(t.id, {[`${k}Task`]: {...t[`${k}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
                                                             </td>
@@ -351,20 +358,46 @@
                                 </div>
                             )}
 
+                            {/* ADMIN TAB */}
+                            {activeTab === 'admin' && role === 'admin' && (
+                                <div className="space-y-10 animate-in fade-in">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                        <div className="bg-white p-8 rounded-3xl border shadow-sm"><h3 className="text-lg font-black mb-6 flex items-center gap-3 uppercase tracking-tighter"><UserCog size={24} className="text-indigo-600"/> Người dùng</h3>
+                                            <div className="space-y-3">
+                                                {usersList.map(u => (
+                                                    <div key={u.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                                        <div className="flex flex-col"><span className="text-sm font-bold text-slate-700">{u.email}</span><span className="text-[9px] uppercase font-black text-slate-400 tracking-widest">{u.role}</span></div>
+                                                        {u.email !== user.email && (<button onClick={() => handleRoleChange(u.id, u.role === 'admin' ? 'editor' : 'admin')} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-indigo-600 hover:text-white transition-all">Đổi quyền</button>)}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-8 rounded-3xl border shadow-sm flex flex-col h-[500px]"><h3 className="text-lg font-black mb-6 flex items-center gap-3 uppercase tracking-tighter"><History size={24} className="text-orange-600"/> Audit Logs</h3>
+                                            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                                                {logs.map(l => (
+                                                    <div key={l.id} className="p-3 border-b border-slate-100 text-[10px] font-mono"><div className="flex justify-between"><span className="font-black text-indigo-600">{l.action}</span><span className="text-slate-400">{l.timestamp?.toDate().toLocaleString()}</span></div><div className="text-slate-500 mt-1 truncate">{l.user}: {l.details}</div></div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* INPUT TAB */}
                             {activeTab === 'input' && (
                                 <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom pb-20">
-                                    <form onSubmit={handleAddTask} className="bg-white p-6 md:p-12 rounded-[2rem] border shadow-xl space-y-12">
-                                        <h3 className="text-xl font-black border-b pb-4">Tạo công việc mới</h3>
+                                    <form onSubmit={handleAddTask} className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-12">
+                                        <h3 className="text-xl font-black border-b border-slate-100 pb-4 uppercase tracking-tighter">Tạo công việc mới</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-1"><label className="text-sm font-bold ml-1">Tên Task *</label><input required className="w-full p-4 bg-slate-50 rounded-2xl border outline-none" value={formData.taskName} onChange={e => setFormData({...formData, taskName: e.target.value})}/></div>
-                                            <div className="space-y-1"><label className="text-sm font-bold ml-1">Đơn vị yêu cầu *</label><select required className="w-full p-4 bg-slate-50 rounded-2xl border outline-none" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})}><option value="">Chọn đơn vị</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Tên Task *</label><input required className="w-full p-4 bg-slate-50 rounded-2xl border outline-none focus:border-indigo-500 font-bold" value={formData.taskName} onChange={e => setFormData({...formData, taskName: e.target.value})} placeholder="VD: Khai giảng Phenikaa 2026"/></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Đơn vị yêu cầu *</label><select required className="w-full p-4 bg-slate-50 rounded-2xl border outline-none font-bold" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})}><option value="">Chọn đơn vị</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                            <div className="space-y-1"><label className="text-sm font-bold ml-1">Ngày Order</label><input type="date" className="w-full p-4 bg-slate-50 rounded-2xl border outline-none" value={formData.orderDate} onChange={e => setFormData({...formData, orderDate: e.target.value})}/></div>
-                                            <div className="space-y-1"><label className="text-sm font-bold ml-1 text-indigo-600 uppercase">Trạng thái tổng</label><select className="w-full p-4 bg-indigo-50 text-indigo-700 font-bold rounded-2xl border-none outline-none" value={formData.overallStatus} onChange={e => setFormData({...formData, overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-                                            <div className="space-y-1"><label className="text-sm font-bold ml-1">Phân loại</label><MultiSelectModal options={CATEGORIES} selected={formData.categories} onChange={v => setFormData({...formData, categories: v})}/></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Ngày Order</label><input type="date" className="w-full p-4 bg-slate-50 rounded-2xl border outline-none font-bold" value={formData.orderDate} onChange={e => setFormData({...formData, orderDate: e.target.value})}/></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Trạng thái tổng</label><select className="w-full p-4 bg-indigo-50 text-indigo-700 font-black rounded-2xl border-none outline-none" value={formData.overallStatus} onChange={e => setFormData({...formData, overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                                            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Phân loại</label><MultiSelectModal options={CATEGORIES} selected={formData.categories} onChange={v => setFormData({...formData, categories: v})}/></div>
                                         </div>
-                                        <button type="submit" className="w-full py-6 bg-indigo-600 text-white font-black rounded-[2rem] text-xl shadow-lg hover:bg-indigo-700 transition-all uppercase">Tạo công việc</button>
+                                        <button type="submit" className="w-full py-6 bg-indigo-600 text-white font-black rounded-[2rem] text-xl shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-tighter">Tạo công việc</button>
                                     </form>
                                 </div>
                             )}
