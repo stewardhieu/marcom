@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.10 (UX Upgrade)</title>
+    <title>MarCom Dashboard Pro v12.11 (Fixed Layout & Data)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -53,7 +53,6 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInFromBottom { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
-        /* Sidebar Transition */
         .sidebar-transition { transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; }
         .main-transition { transition: margin-left 0.3s ease-in-out; }
     </style>
@@ -67,7 +66,7 @@
         import { initializeApp } from 'firebase/app';
         import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft } from 'lucide-react';
+        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar } from 'lucide-react';
         import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
         // --- CONFIG ---
@@ -117,20 +116,15 @@
         // --- DATA ---
         const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
         const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
-        
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
         const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện", "Chờ duyệt", "Gấp"];
         const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện"];
-        
-        const STATUS_COLOR_MAP = { 
-            "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", "Gác lại": "#f59e0b", 
-            "Không": "#cbd5e1", "Không có task": "#cbd5e1", "Đang thực hiện": "#3b82f6", "Chờ duyệt": "#a855f7", "Gấp": "#ef4444" 
-        };
+        const STATUS_COLOR_MAP = { "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", "Gác lại": "#f59e0b", "Không": "#cbd5e1", "Không có task": "#cbd5e1", "Đang thực hiện": "#3b82f6", "Chờ duyệt": "#a855f7", "Gấp": "#ef4444" };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
         // --- COMPONENTS ---
         
-        // MultiSelect cải tiến với Backdrop (Sửa lỗi bị đóng & lỗi chìm)
+        // MultiSelect FIXED POSITION (Giải quyết triệt để lỗi bị che khuất)
         const MultiSelect = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
@@ -141,37 +135,51 @@
                 e.stopPropagation();
                 if (containerRef.current) {
                     const rect = containerRef.current.getBoundingClientRect();
-                    // Tính toán vị trí fixed
-                    setCoords({ top: rect.bottom + window.scrollY, left: rect.left, width: Math.max(rect.width, 250) });
+                    // Tính toán vị trí Fixed dựa trên khung hình window
+                    setCoords({ 
+                        top: rect.bottom, 
+                        left: rect.left, 
+                        width: Math.max(rect.width, 250) 
+                    });
                 }
                 setIsOpen(true);
             };
 
-            const toggleOption = (option) => { 
+            const toggleOption = (e, option) => { 
+                e.stopPropagation(); 
                 const newSelected = selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]; 
                 onChange(newSelected);
-                // Không đóng popup ở đây để cho phép chọn nhiều
             };
             
+            // Đóng khi cuộn hoặc resize để tránh lệch vị trí
+            useEffect(() => {
+                const handleScroll = () => { if(isOpen) setIsOpen(false); };
+                window.addEventListener('scroll', handleScroll, true);
+                window.addEventListener('resize', handleScroll);
+                return () => {
+                    window.removeEventListener('scroll', handleScroll, true);
+                    window.removeEventListener('resize', handleScroll);
+                };
+            }, [isOpen]);
+
             return (
-                <div className="relative w-full" ref={containerRef}>
-                    <div onClick={handleOpen} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
-                        <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">
-                            {selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}
+                <>
+                    <div className="relative w-full" ref={containerRef}>
+                        <div onClick={handleOpen} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
+                            <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">
+                                {selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}
+                            </div>
+                            <ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                         </div>
-                        <ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
-                    
+                    {/* Render ra ngoài root, vị trí fixed */}
                     {isOpen && (
                         <>
-                            {/* Backdrop trong suốt để bắt sự kiện click ra ngoài */}
-                            <div className="fixed inset-0 z-[9998]" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}></div>
-                            
-                            {/* Popup nổi lên trên cùng */}
+                            <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)}></div>
                             <div className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10 animate-in fade-in zoom-in-95 duration-100" 
                                  style={{ top: coords.top + 5, left: coords.left, width: coords.width }}>
                                 {options.map(option => (
-                                    <div key={option} onClick={(e) => { e.stopPropagation(); toggleOption(option); }} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer select-none border-b border-slate-50 last:border-0">
+                                    <div key={option} onClick={(e) => toggleOption(e, option)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer select-none border-b border-slate-50 last:border-0">
                                         <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
                                             {selected.includes(option) && <Check size={12} className="text-white font-bold"/>}
                                         </div>
@@ -181,7 +189,7 @@
                             </div>
                         </>
                     )}
-                </div>
+                </>
             );
         };
 
@@ -228,10 +236,12 @@
             const [selectedIds, setSelectedIds] = useState([]);
             const [toast, setToast] = useState(null);
             const deletedDataRef = useRef([]);
-            const [sidebarOpen, setSidebarOpen] = useState(true); // Trạng thái Menu
+            const [sidebarOpen, setSidebarOpen] = useState(true);
 
             const [colWidths, setColWidths] = useState({ check: 50, actions: 60, admin: 140, task: 320, overall: 160, unit: 180, brand: 350, operation: 350, media: 350 });
             const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
+            
+            // Global Filter now at App level
             const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
             
             const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
@@ -291,50 +301,52 @@
                 } catch (e) { alert("Lỗi hoàn tác: " + e.message); }
             };
 
+            // MOCK DATA GENERATOR (Đa dạng hóa)
             const createMockData = async () => {
                 if(!db) return;
                 const batch = writeBatch(db);
                 try {
-                    const mockData = [
-                        {
-                            orderDate: "2026-01-05", paperStatus: "Đã duyệt", taskName: "Lễ ký kết MOU Đại học Busan", overallStatus: "Đang thực hiện", unit: "Hợp tác quốc tế", categories: ["Thiết kế", "Hậu cần", "Quay chụp"],
-                            brandTask: { name: "Thiết kế Backdrop & Standee", deadline: "2026-01-12", status: "Đang xử lý", link: "" },
-                            operationTask: { name: "Setup hội trường & Teabreak", deadline: "2026-01-14", status: "Chưa bắt đầu", link: "" },
-                            mediaTask: { name: "Chụp ảnh sự kiện", deadline: "2026-01-15", status: "Chưa bắt đầu", link: "" }
-                        },
-                        {
-                            orderDate: "2026-01-06", paperStatus: "Chưa duyệt", taskName: "Workshop \"Sắc màu Trung Hoa\"", overallStatus: "Chờ duyệt", unit: "Bộ môn Trung", categories: ["Content", "Quay dựng"],
-                            brandTask: { name: "Viết bài PR & Đăng tuyển", deadline: "2026-01-09", status: "Hoàn thành", link: "" },
-                            operationTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" },
-                            mediaTask: { name: "Quay video recap", deadline: "2026-01-20", status: "Chưa bắt đầu", link: "" }
-                        },
-                        {
-                            orderDate: "2026-01-08", paperStatus: "Đã duyệt", taskName: "Chung kết Hùng biện Tiếng Anh", overallStatus: "Đang thực hiện", unit: "Tiếng Anh", categories: ["Hậu cần", "Livestream"],
-                            brandTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" },
-                            operationTask: { name: "Chuẩn bị sân khấu & Âm thanh", deadline: "2026-01-25", status: "Đang xử lý", link: "" },
-                            mediaTask: { name: "Livestream Fanpage", deadline: "2026-01-25", status: "Đang xử lý", link: "" }
-                        },
-                        {
-                            orderDate: "2026-01-09", paperStatus: "Nợ tờ trình", taskName: "Tiếp đón đoàn đại biểu Úc", overallStatus: "Gấp", unit: "Hợp tác quốc tế", categories: ["Quà tặng"],
-                            brandTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" },
-                            operationTask: { name: "Mua quà lưu niệm & Hoa", deadline: "2026-01-11", status: "Đang xử lý", link: "" },
-                            mediaTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" }
-                        },
-                        {
-                            orderDate: "2026-01-10", paperStatus: "Đã duyệt", taskName: "Tuần lễ văn hóa Á Đông", overallStatus: "Chưa bắt đầu", unit: "Bộ môn Trung", categories: ["Thiết kế ấn phẩm"],
-                            brandTask: { name: "Thiết kế bộ Merch (Áo, Mũ)", deadline: "2026-02-01", status: "Chưa bắt đầu", link: "" },
-                            operationTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" },
-                            mediaTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" }
-                        }
+                    const mockScenarios = [
+                        { task: "Lễ Khai giảng K38", unit: "Toàn trường", cats: ["Hỗ trợ tổ chức sự kiện", "Chụp ảnh"], status: "Đang thực hiện" },
+                        { task: "Tuyển sinh Đại học 2026", unit: "P. Marketing và Truyền thông", cats: ["Thiết kế", "Đưa tin"], status: "Đang xử lý" },
+                        { task: "Hội thảo AI trong Y tế", unit: "BM Trí tuệ nhân tạo", cats: ["Thiết kế", "Livestream"], status: "Chưa bắt đầu" },
+                        { task: "Ngày hội việc làm Job Fair", unit: "P. Công tác chính trị sinh viên", cats: ["Hậu cần", "Quay chụp"], status: "Gấp" },
+                        { task: "Cuộc thi Rung Chuông Vàng", unit: "Đoàn Thanh niên - Hội sinh viên", cats: ["Thiết kế", "Duyệt thiết kế"], status: "Hoàn thành" },
+                        { task: "Lễ ký kết MOU với Samsung", unit: "Hợp tác quốc tế", cats: ["Chụp ảnh", "Đưa tin"], status: "Đang thực hiện" },
+                        { task: "Giải bóng đá sinh viên", unit: "BM Giáo dục thể chất", cats: ["Livestream", "Bình luận"], status: "Đang xử lý" },
+                        { task: "Thiết kế Profile Khoa CNTT", unit: "K. Công nghệ thông tin", cats: ["Thiết kế"], status: "Chờ duyệt" },
+                        { task: "Video giới thiệu ngành Ngôn ngữ Anh", unit: "BM Tiếng Anh", cats: ["Quay dựng"], status: "Chưa bắt đầu" },
+                        { task: "Triển lãm đồ án tốt nghiệp K. Kiến trúc", unit: "K. Xã hội và Nhân văn", cats: ["Hỗ trợ tổ chức sự kiện"], status: "Đang thực hiện" },
+                        { task: "Mua sắm quà tặng Tết đối tác", unit: "Văn phòng trường", cats: ["Khác"], status: "Hoàn thành" },
+                        { task: "Cập nhật Website khoa Dược", unit: "K. Khoa học sức khỏe", cats: ["Khác"], status: "Gác lại" },
+                        { task: "Chụp ảnh thẻ sinh viên K39", unit: "P. Đào tạo", cats: ["Chụp ảnh"], status: "Chưa bắt đầu" },
+                        { task: "Thiết kế Standee tuyển dụng", unit: "P. Quản trị nguồn nhân lực", cats: ["Thiết kế"], status: "Đang xử lý" },
+                        { task: "Họp báo công bố điểm chuẩn", unit: "P. Đào tạo", cats: ["Đưa tin", "Livestream"], status: "Gấp" }
                     ];
 
-                    mockData.forEach(item => {
+                    mockScenarios.forEach((scenario, index) => {
                         const newRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'));
-                        batch.set(newRef, { ...item, createdAt: serverTimestamp() });
+                        // Random date
+                        const d = new Date();
+                        d.setDate(d.getDate() + (Math.random() * 30 - 10)); // +/- days
+                        const dateStr = d.toISOString().split('T')[0];
+
+                        batch.set(newRef, {
+                            orderDate: dateStr,
+                            paperStatus: Math.random() > 0.5 ? "Đã duyệt" : "Chưa duyệt",
+                            taskName: scenario.task,
+                            overallStatus: scenario.status,
+                            unit: scenario.unit,
+                            categories: scenario.cats,
+                            brandTask: { name: "Triển khai content", deadline: dateStr, status: "Đang xử lý", link: "" },
+                            operationTask: { name: "Chuẩn bị hậu cần", deadline: dateStr, status: "Chưa bắt đầu", link: "" },
+                            mediaTask: { name: "Sản xuất hình ảnh", deadline: dateStr, status: "Không có task", link: "" },
+                            createdAt: serverTimestamp()
+                        });
                     });
 
                     await batch.commit();
-                    alert("Đã khởi tạo 5 dòng dữ liệu mẫu thành công!");
+                    alert("Đã tạo 15 dòng dữ liệu giả lập thành công!");
                 } catch (e) { alert("Lỗi: " + e.message); }
             };
 
@@ -362,7 +374,6 @@
                         const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                         let count = 0;
                         const batch = writeBatch(db);
-                        
                         for (const row of data.slice(0, 490)) { 
                             const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'));
                             batch.set(newDocRef, { 
@@ -373,24 +384,9 @@
                                 overallStatus: row["OverallStatus"] || "Chưa bắt đầu", 
                                 unit: row["Unit"] || "Toàn trường", 
                                 categories: row["Categories"] ? row["Categories"].split(',').map(s => s.trim()) : [],
-                                brandTask: {
-                                    name: row["BrandTaskName"] || "",
-                                    deadline: processExcelDate(row["BrandDeadline"]) || "",
-                                    status: row["BrandStatus"] || "Chưa bắt đầu",
-                                    link: ""
-                                },
-                                operationTask: {
-                                    name: row["OperationTaskName"] || "",
-                                    deadline: processExcelDate(row["OperationDeadline"]) || "",
-                                    status: row["OperationStatus"] || "Chưa bắt đầu",
-                                    link: ""
-                                },
-                                mediaTask: {
-                                    name: row["MediaTaskName"] || "",
-                                    deadline: processExcelDate(row["MediaDeadline"]) || "",
-                                    status: row["MediaStatus"] || "Chưa bắt đầu",
-                                    link: ""
-                                }
+                                brandTask: { name: row["BrandTaskName"] || "", deadline: processExcelDate(row["BrandDeadline"]) || "", status: row["BrandStatus"] || "Chưa bắt đầu", link: "" },
+                                operationTask: { name: row["OperationTaskName"] || "", deadline: processExcelDate(row["OperationDeadline"]) || "", status: row["OperationStatus"] || "Chưa bắt đầu", link: "" },
+                                mediaTask: { name: row["MediaTaskName"] || "", deadline: processExcelDate(row["MediaDeadline"]) || "", status: row["MediaStatus"] || "Chưa bắt đầu", link: "" }
                             });
                             count++;
                         }
@@ -427,7 +423,6 @@
             const teamStats = (teamKey) => { const counts = {}; TASK_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); };
             const teamUrgent = (teamKey) => { const today = new Date(); const limit = new Date(); limit.setDate(today.getDate() + 3); return filteredTasks.filter(t => { const dStr = t[`${teamKey}Task`]?.deadline; if (!dStr) return false; const deadlineDate = new Date(dStr); return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không có task'; }); };
 
-            // NEW: Chart for Categories (Completed vs Pending)
             const chartDataCategory = useMemo(() => {
                 const data = CATEGORIES.map(cat => ({ name: cat, completed: 0, pending: 0 }));
                 filteredTasks.forEach(t => {
@@ -460,25 +455,34 @@
                     
                     {/* SIDEBAR COLLAPSIBLE */}
                     <aside className={`sidebar-transition fixed h-full flex flex-col z-[100] text-white shadow-2xl bg-[#0F172A] ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'}`}>
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.10</span></h1></div>
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.11</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1 overflow-hidden whitespace-nowrap">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
                         <div className="p-4 border-t border-slate-800 overflow-hidden whitespace-nowrap"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu</button></div>
                     </aside>
 
                     {/* MAIN CONTENT */}
                     <main className={`main-transition flex-1 p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F1F5F9] ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
-                        {/* TOGGLE SIDEBAR BUTTON */}
-                        <div className="fixed top-4 left-4 z-[200] print:hidden">
-                            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-indigo-600 border border-slate-200 transition-all">
-                                {sidebarOpen ? <ChevronLeft size={20}/> : <Menu size={20}/>}
-                            </button>
+                        {/* HEADER BAR (Toggle & Global Filter) */}
+                        <div className="flex justify-between items-center mb-8 sticky top-0 bg-[#F1F5F9] z-[50] py-2">
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-indigo-600 border border-slate-200 transition-all">
+                                    {sidebarOpen ? <ChevronLeft size={20}/> : <Menu size={20}/>}
+                                </button>
+                                <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{activeTab === 'dashboard' ? 'Thống kê' : activeTab === 'list' ? 'Danh sách công việc' : 'Tạo công việc'}</h2>
+                            </div>
+                            
+                            {/* GLOBAL DATE FILTER */}
+                            <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2">
+                                <div className="px-3 py-2 bg-indigo-50 rounded-lg text-indigo-600"><Calendar size={16}/></div>
+                                <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} />
+                                <span className="text-slate-300">-</span>
+                                <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} />
+                                {(globalFilters.dateStart || globalFilters.dateEnd) && <button onClick={() => setGlobalFilters({...globalFilters, dateStart:'', dateEnd:''})} className="p-1 text-slate-400 hover:text-rose-500"><X size={14}/></button>}
+                            </div>
                         </div>
 
                         {activeTab === 'dashboard' && (
                            <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-                              <header className="flex justify-between items-end border-b border-slate-200 pb-6 pl-10"><div><h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Thống kê nghiệp vụ</h2></div><button onClick={handleAiAnalysis} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"><Sparkles size={16}/> ✨ AI Phân tích</button></header>
-                              {aiAnalysis && <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2rem] flex gap-4 animate-in slide-in-from-top duration-500"><div className="p-3 bg-white text-indigo-600 rounded-2xl h-fit"><BrainCircuit size={24}/></div><div className="flex-1 text-sm font-medium text-indigo-900 italic leading-relaxed">{aiAnalysis}</div><button onClick={() => setAiAnalysis("")} className="text-indigo-300 hover:text-indigo-600"><X size={18}/></button></div>}
-                              <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm grid grid-cols-4 gap-6"><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Thời gian</label><div className="flex gap-2"><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} /><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} /></div></div><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Đơn vị yêu cầu</label><select className="w-full p-2 border rounded-xl text-xs font-bold" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}><option value="">Tất cả đơn vị</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div><div className="flex items-end"><button onClick={() => setGlobalFilters({dateStart:'', dateEnd:'', unit:'', category:''})} className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200 uppercase">Xóa bộ lọc</button></div></div>
                               <div className="grid grid-cols-4 gap-6">{[{ label: 'Tổng Ticket', val: filteredTasks.length, color: 'indigo', Icon: TableIcon }, { label: 'Hoàn thành', val: filteredTasks.filter(t => t.overallStatus === 'Hoàn thành').length, color: 'emerald', Icon: CheckCircle2 }, { label: 'Đang xử lý', val: filteredTasks.filter(t => t.overallStatus === 'Đang xử lý').length, color: 'amber', Icon: Clock }, { label: 'Chưa duyệt', val: filteredTasks.filter(t => t.paperStatus === 'Chưa duyệt').length, color: 'rose', Icon: AlertCircle }].map((kpi, i) => (<div key={i} className="bg-white p-7 rounded-[2.5rem] border border-slate-200 shadow-sm transition-all hover:shadow-lg"><div className={`w-12 h-12 flex items-center justify-center rounded-2xl mb-6 ${getColorClasses(kpi.color)}`}><kpi.Icon size={24}/></div><h4 className="text-slate-400 text-[11px] font-black uppercase mb-1 tracking-widest">{kpi.label}</h4><p className="text-4xl font-black text-slate-900">{kpi.val}</p></div>))}</div>
                               
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -486,23 +490,12 @@
                                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[400px] flex flex-col items-center"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 tracking-widest underline decoration-indigo-200">Phân bổ khối lượng Team</h4><ResponsiveContainer width="100%" height="80%"><BarChart data={teamVolumeData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={100} style={{fontSize: '11px', fontWeight: 800}} /><Tooltip /><Bar dataKey="value" barSize={35} radius={[0, 8, 8, 0]}>{teamVolumeData.map((e, i) => <Cell key={i} fill={TEAM_COLORS[e.name.toLowerCase()]} />)}</Bar></BarChart></ResponsiveContainer></div>
                               </div>
 
-                              {/* NEW CHART */}
                               <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[450px] mt-8"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 text-center tracking-widest underline decoration-indigo-200">Tiến độ theo hạng mục công việc</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataCategory} margin={{top: 20, right: 30, left: 20, bottom: 5}}><XAxis dataKey="name" style={{fontSize: '10px', fontWeight: 700}} /><YAxis style={{fontSize: '10px'}} /><Tooltip /><Legend /><Bar dataKey="completed" name="Đã hoàn thành" stackId="a" fill="#10b981" barSize={50} /><Bar dataKey="pending" name="Cần hoàn thành" stackId="a" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={50} /></BarChart></ResponsiveContainer></div>
-
-                              <div className="grid grid-cols-3 gap-8 border-t pt-10">
-                                 {['brand', 'operation', 'media'].map(t => (
-                                   <div key={t} className={`p-8 bg-white rounded-[2.5rem] border border-slate-200 h-[450px] flex flex-col ${teamUrgent(t).length > 0 ? 'border-rose-200 shadow-2xl shadow-rose-50' : ''}`}><h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6 flex justify-between"><span>Team {t.toUpperCase()} Sát Deadline</span><span className="bg-slate-100 px-2 py-0.5 rounded text-indigo-600 font-bold">{teamUrgent(t).length}</span></h4>
-                                      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">{teamUrgent(t).length === 0 ? <div className="h-full flex items-center justify-center text-slate-300 italic text-xs">Hoạt động ổn định</div> : teamUrgent(t).map(item => (<div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100"><div className="text-[11px] font-black text-slate-800 leading-tight mb-1 truncate">{item.taskName}</div><div className="flex justify-between items-center text-[9px] font-bold text-rose-500 mt-1"><span className="text-slate-400 truncate max-w-[80px]">{item.unit}</span><span className="flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-lg font-black tracking-tighter"><Clock size={10}/> {item[`${t}Task`].deadline}</span></div></div>))}</div>
-                                      <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2">{teamStats(t).map((s, idx) => (<div key={idx} className="flex items-center gap-1.5 text-[8px] font-black uppercase text-slate-400"><div className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_COLOR_MAP[s.name] }}></div>{s.name.charAt(0)}: {s.value}</div>))}</div>
-                                   </div>
-                                 ))}
-                              </div>
                            </div>
                         )}
 
                         {activeTab === 'input' && (
                            <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom duration-500 pb-20">
-                              <header className="mb-10 flex justify-between items-center pl-10"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Tạo công việc</h2><button onClick={handleAiOptimize} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-100 transition-all"><Wand2 size={14}/> ✨ Tối ưu bằng AI</button></header>
                               <form onSubmit={handleAddTask} className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-xl space-y-12">
                                  <div className="space-y-8"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">I. Thông tin chung</h3><div className="grid grid-cols-2 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Tên Task (Chung) *</label><input required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" value={formData.taskName} onChange={e => setFormData({...formData, taskName: e.target.value})} placeholder="Tên chiến dịch..." /></div><div className="space-y-1"><label className="text-sm font-bold">Đơn vị yêu cầu *</label><select required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none font-bold" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})}><option value="">-- Chọn đơn vị --</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div></div><div className="grid grid-cols-3 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Ngày Order</label><input type="date" className="w-full px-5 py-4 rounded-2xl border-slate-200 bg-slate-50 text-sm outline-none" value={formData.orderDate} onChange={e => setFormData({...formData, orderDate: e.target.value})} /></div><div className="space-y-1"><label className="text-sm font-bold text-indigo-600">Hoàn thành tổng *</label><select className="w-full px-5 py-4 rounded-2xl border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-700" value={formData.overallStatus} onChange={e => setFormData({...formData, overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><div className="space-y-1"><label className="text-sm font-bold">Phân loại</label><MultiSelect options={CATEGORIES} selected={formData.categories} onChange={v => setFormData({...formData, categories: v})} /></div></div></div>
                                  <div className="space-y-8 pt-10 border-t border-slate-100"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">II. Phân công đội ngũ</h3><div className="grid grid-cols-3 gap-6">{['brand', 'operation', 'media'].map(t => (<div key={t} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4"><span className="text-[10px] font-black uppercase text-slate-400">Team {t.toUpperCase()}</span><input className="w-full p-3 text-[11px] border border-slate-200 rounded-xl font-bold bg-white" placeholder="Tên task cụ thể..." value={formData[`${t}Task`].name} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], name: e.target.value}})} /><select className="w-full p-3 text-[11px] border rounded-xl font-bold bg-white outline-none" value={formData[`${t}Task`].status} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select><input type="date" className="w-full p-3 text-[11px] border rounded-xl bg-white outline-none" value={formData[`${t}Task`].deadline} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], deadline: e.target.value}})} /></div>))}</div></div>
@@ -513,17 +506,17 @@
 
                         {activeTab === 'list' && (
                            <div className="flex flex-col h-full overflow-hidden">
-                              <header className="mb-6 flex justify-between items-center pl-10"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase tracking-widest">Danh sách công việc</h2>
+                              <div className="flex justify-between items-center mb-4">
                                 <div className="flex gap-2">
                                     {selectedIds.length > 0 && (<button onClick={() => setDeleteModal({ open: true, ids: selectedIds })} className="flex items-center gap-2 px-4 py-3 bg-rose-600 text-white rounded-xl shadow-lg font-bold hover:bg-rose-700 transition-all animate-in fade-in"><Trash2 size={18}/> Xóa {selectedIds.length} mục</button>)}
                                     <button onClick={downloadTemplate} title="Tải Excel mẫu" className="p-3 bg-white border rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all"><Download size={20}/></button>
                                     <label className="p-3 bg-indigo-600 text-white rounded-xl shadow-lg cursor-pointer hover:bg-indigo-700 transition-all"><Upload size={20}/><input type="file" className="hidden" onChange={handleFileUpload}/></label>
                                 </div>
-                              </header>
+                              </div>
                               <div className="bg-white rounded-[2.5rem] border shadow-sm flex-1 overflow-hidden relative flex flex-col">
                                  <div className="overflow-auto custom-scrollbar flex-1 pb-80">
                                     <table className="table-fixed text-left border-collapse divide-x divide-slate-100" style={{ width: 'max-content' }}>
-                                       <thead className="sticky top-0 z-[70]">
+                                       <thead className="sticky top-0 z-[40]">
                                           <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase text-slate-400 tracking-widest divide-x divide-slate-200">
                                             <th className="px-4 py-5 sticky-col-0 text-center"><input type="checkbox" onChange={() => handleSelectAll(filteredTasks)} checked={filteredTasks.length > 0 && selectedIds.length === filteredTasks.length} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></th>
                                             <th className="px-4 py-5 sticky-col-1 text-center" style={{ width: colWidths.actions }}># <div className="resizer" onMouseDown={(e) => handleResize('actions', e.clientX, colWidths.actions)} /></th>
