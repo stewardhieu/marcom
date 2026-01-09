@@ -84,14 +84,23 @@ Kiểm tra trang index sau
         // --- CẤU HÌNH HỆ THỐNG ---
         
         // 1. Cấu hình Firebase (BẮT BUỘC: Thay thế bằng thông tin từ Firebase Console của bạn)
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "firebase/app";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+        
+        // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSy...your-real-api-key-here...",          // thay hết
-            authDomain: "your-project-name.firebaseapp.com",
-            projectId: "your-project-name",
-            storageBucket: "your-project-name.appspot.com",
-            messagingSenderId: "123456789012",
-            appId: "1:123456789012:web:xxxxxxxxxxxxxxxxxxxxxxxx"
+          apiKey: "AIzaSyDNdBlMZL42nkWc7W1OtgkWvkxKCwxKCjQ",
+          authDomain: "marcom-dashboard-test.firebaseapp.com",
+          projectId: "marcom-dashboard-test",
+          storageBucket: "marcom-dashboard-test.firebasestorage.app",
+          messagingSenderId: "840436404750",
+          appId: "1:840436404750:web:783b44fa370f94b4dba25f"
         };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
 
         const appId = 'marcom-hub-pro-v12'; // Định danh ứng dụng (namespace cho dữ liệu)
         
