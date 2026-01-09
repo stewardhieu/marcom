@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.8 (Fix Excel & New Data)</title>
+    <title>MarCom Dashboard Pro v12.9 (UX Upgrade)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -52,6 +52,10 @@
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInFromBottom { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* Sidebar Transition */
+        .sidebar-transition { transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; }
+        .main-transition { transition: margin-left 0.3s ease-in-out; }
     </style>
 </head>
 <body class="bg-[#F1F5F9] text-slate-800 h-screen overflow-hidden">
@@ -63,7 +67,7 @@
         import { initializeApp } from 'firebase/app';
         import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical } from 'lucide-react';
+        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft } from 'lucide-react';
         import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
         // --- CONFIG ---
@@ -90,67 +94,107 @@
 
         const GEMINI_MODEL = "gemini-2.0-flash-exp";
 
-        // --- HELPER: XỬ LÝ NGÀY TỪ EXCEL (ĐÃ SỬA LỖI Math.UTC -> Date.UTC) ---
+        // --- HELPER ---
         const processExcelDate = (input) => {
             if (!input) return "";
-            // Trường hợp 1: Excel Serial Number (vd: 45300)
             if (typeof input === 'number') {
-                // SỬA LỖI Ở ĐÂY: Dùng Date.UTC thay vì Math.UTC
                 const date = new Date(Date.UTC(1899, 11, 30)); 
                 date.setDate(date.getDate() + input);
                 return date.toISOString().split('T')[0];
             }
-            // Trường hợp 2: Chuỗi dd/mm/yyyy
             if (typeof input === 'string' && input.includes('/')) {
                 const parts = input.split('/');
                 if (parts.length === 3) {
-                    // Đảo từ dd/mm/yyyy -> yyyy-mm-dd
-                    // Thêm số 0 nếu ngày/tháng < 10 để chuẩn ISO
                     const day = parts[0].padStart(2, '0');
                     const month = parts[1].padStart(2, '0');
-                    const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2]; // Xử lý năm 26 -> 2026
+                    const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
                     return `${year}-${month}-${day}`;
                 }
             }
-            // Trường hợp 3: Đã đúng chuẩn yyyy-mm-dd hoặc định dạng khác
             return input;
         };
 
-        // --- DATA CONSTANTS (Đã cập nhật theo yêu cầu của bạn) ---
+        // --- DATA ---
         const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
-        const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác", "Hậu cần", "Quay chụp", "Content", "Quay dựng", "Livestream", "Quà tặng", "Thiết kế ấn phẩm"];
         
-        // Cập nhật trạng thái mới từ dữ liệu mẫu
+        // FIX: Danh sách phân loại chuẩn theo yêu cầu
+        const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
+        
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
         const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện", "Chờ duyệt", "Gấp"];
-        const TASK_STATUS = ["Không", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện"];
+        
+        // FIX: Đổi "Không" thành "Không có task"
+        const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện"];
         
         const STATUS_COLOR_MAP = { 
-            "Chưa bắt đầu": "#94a3b8", 
-            "Đang xử lý": "#6366f1", 
-            "Hoàn thành": "#10b981", 
-            "Gác lại": "#f59e0b", 
-            "Không": "#cbd5e1",
-            "Đang thực hiện": "#3b82f6", // Xanh dương đậm
-            "Chờ duyệt": "#a855f7", // Tím
-            "Gấp": "#ef4444" // Đỏ
+            "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", "Gác lại": "#f59e0b", 
+            "Không": "#cbd5e1", "Không có task": "#cbd5e1", "Đang thực hiện": "#3b82f6", "Chờ duyệt": "#a855f7", "Gấp": "#ef4444" 
         };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
-        // --- COMPONENTS ---
+        // --- IMPROVED MULTISELECT COMPONENT ---
         const MultiSelect = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
             const containerRef = useRef(null);
-            const handleOpen = (e) => { e.stopPropagation(); if (containerRef.current) { const rect = containerRef.current.getBoundingClientRect(); setCoords({ top: rect.bottom + window.scrollY, left: rect.left, width: rect.width }); } setIsOpen(!isOpen); };
-            useEffect(() => { const close = () => setIsOpen(false); if (isOpen) { document.addEventListener("mousedown", close); window.addEventListener("scroll", close); } return () => { document.removeEventListener("mousedown", close); window.removeEventListener("scroll", close); }; }, [isOpen]);
-            const toggleOption = (option) => { const newSelected = selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]; onChange(newSelected); };
+            
+            const handleOpen = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    // Tính toán vị trí để hiện popup ngay bên dưới
+                    setCoords({ top: rect.bottom + window.scrollY, left: rect.left, width: Math.max(rect.width, 250) });
+                }
+                setIsOpen(prev => !prev);
+            };
+
+            // Click outside để đóng
+            useEffect(() => {
+                const close = (e) => {
+                    // Nếu click vào popup thì không đóng
+                    if (e.target.closest('.multiselect-popup')) return;
+                    setIsOpen(false);
+                };
+                if (isOpen) {
+                    document.addEventListener("mousedown", close);
+                    window.addEventListener("scroll", close); // Đóng khi cuộn để tránh lệch
+                }
+                return () => {
+                    document.removeEventListener("mousedown", close);
+                    window.removeEventListener("scroll", close);
+                };
+            }, [isOpen]);
+
+            const toggleOption = (e, option) => { 
+                e.stopPropagation(); // Ngăn chặn sự kiện nổi bọt làm đóng popup
+                const newSelected = selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]; 
+                onChange(newSelected);
+                // KHÔNG setOpen(false) ở đây để cho phép chọn nhiều
+            };
+            
             return (
-                <div className="relative" ref={containerRef}>
+                <div className="relative w-full" ref={containerRef}>
                     <div onClick={handleOpen} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
-                        <div className="flex flex-wrap gap-0.5">{selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-50 text-indigo-700 text-[8px] px-1.5 py-0.5 rounded font-bold border border-indigo-100">{item}</span>)}</div><ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
+                        <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">
+                            {selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}
+                        </div>
+                        <ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
-                    {isOpen && (<div className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10" style={{ top: coords.top + 5, left: coords.left, width: Math.max(coords.width, 220) }}>{options.map(option => (<div key={option} onClick={(e) => { e.stopPropagation(); toggleOption(option); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 cursor-pointer"><div className={`w-4 h-4 rounded border flex items-center justify-center ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'}`}>{selected.includes(option) && <Check size={10} className="text-white font-bold"/>}</div><span className={`text-xs ${selected.includes(option) ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>{option}</span></div>))}</div>)}
+                    {/* Sử dụng Z-Index cực cao và Fixed positioning để nổi lên trên cùng */}
+                    {isOpen && (
+                        <div className="multiselect-popup fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10 animate-in fade-in zoom-in-95 duration-100" 
+                             style={{ top: coords.top + 5, left: coords.left, width: coords.width }}>
+                            {options.map(option => (
+                                <div key={option} onClick={(e) => toggleOption(e, option)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer select-none border-b border-slate-50 last:border-0">
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
+                                        {selected.includes(option) && <Check size={12} className="text-white font-bold"/>}
+                                    </div>
+                                    <span className={`text-xs ${selected.includes(option) ? 'text-indigo-700 font-bold' : 'text-slate-700'}`}>{option}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -198,11 +242,15 @@
             const [selectedIds, setSelectedIds] = useState([]);
             const [toast, setToast] = useState(null);
             const deletedDataRef = useRef([]);
+            
+            // Sidebar State
+            const [sidebarOpen, setSidebarOpen] = useState(true);
 
             const [colWidths, setColWidths] = useState({ check: 50, actions: 60, admin: 140, task: 320, overall: 160, unit: 180, brand: 350, operation: 350, media: 350 });
             const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
             const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
             
+            // Initial data for form
             const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
             const [formData, setFormData] = useState(emptyFormData);
 
@@ -224,7 +272,7 @@
 
             const handleAddTask = async (e) => {
                 e.preventDefault(); if(!db) return alert("Chưa kết nối Database!");
-                try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { ...formData, createdAt: serverTimestamp() }); setFormData(emptyFormData); setActiveTab('list'); alert("Tạo ticket thành công!"); } catch (e) { alert("Lỗi: " + e.message); }
+                try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'), { ...formData, createdAt: serverTimestamp() }); setFormData(emptyFormData); setActiveTab('list'); alert("Tạo công việc thành công!"); } catch (e) { alert("Lỗi: " + e.message); }
             };
 
             const debouncedUpdate = useCallback(_.debounce(async (id, data) => { if(!db) return; try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } catch (e) { console.error(e); } }, 800), []);
@@ -260,7 +308,6 @@
                 } catch (e) { alert("Lỗi hoàn tác: " + e.message); }
             };
 
-            // FIX: CẬP NHẬT DỮ LIỆU MẪU THEO YÊU CẦU
             const createMockData = async () => {
                 if(!db) return;
                 const batch = writeBatch(db);
@@ -275,26 +322,26 @@
                         {
                             orderDate: "2026-01-06", paperStatus: "Chưa duyệt", taskName: "Workshop \"Sắc màu Trung Hoa\"", overallStatus: "Chờ duyệt", unit: "Bộ môn Trung", categories: ["Content", "Quay dựng"],
                             brandTask: { name: "Viết bài PR & Đăng tuyển", deadline: "2026-01-09", status: "Hoàn thành", link: "" },
-                            operationTask: { name: "Không", deadline: "", status: "Không", link: "" },
+                            operationTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" },
                             mediaTask: { name: "Quay video recap", deadline: "2026-01-20", status: "Chưa bắt đầu", link: "" }
                         },
                         {
                             orderDate: "2026-01-08", paperStatus: "Đã duyệt", taskName: "Chung kết Hùng biện Tiếng Anh", overallStatus: "Đang thực hiện", unit: "Tiếng Anh", categories: ["Hậu cần", "Livestream"],
-                            brandTask: { name: "Không", deadline: "", status: "Không", link: "" },
+                            brandTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" },
                             operationTask: { name: "Chuẩn bị sân khấu & Âm thanh", deadline: "2026-01-25", status: "Đang xử lý", link: "" },
                             mediaTask: { name: "Livestream Fanpage", deadline: "2026-01-25", status: "Đang xử lý", link: "" }
                         },
                         {
                             orderDate: "2026-01-09", paperStatus: "Nợ tờ trình", taskName: "Tiếp đón đoàn đại biểu Úc", overallStatus: "Gấp", unit: "Hợp tác quốc tế", categories: ["Quà tặng"],
-                            brandTask: { name: "Không", deadline: "", status: "Không", link: "" },
+                            brandTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" },
                             operationTask: { name: "Mua quà lưu niệm & Hoa", deadline: "2026-01-11", status: "Đang xử lý", link: "" },
-                            mediaTask: { name: "Không", deadline: "", status: "Không", link: "" }
+                            mediaTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" }
                         },
                         {
                             orderDate: "2026-01-10", paperStatus: "Đã duyệt", taskName: "Tuần lễ văn hóa Á Đông", overallStatus: "Chưa bắt đầu", unit: "Bộ môn Trung", categories: ["Thiết kế ấn phẩm"],
                             brandTask: { name: "Thiết kế bộ Merch (Áo, Mũ)", deadline: "2026-02-01", status: "Chưa bắt đầu", link: "" },
-                            operationTask: { name: "Không", deadline: "", status: "Không", link: "" },
-                            mediaTask: { name: "Không", deadline: "", status: "Không", link: "" }
+                            operationTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" },
+                            mediaTask: { name: "Không có task", deadline: "", status: "Không có task", link: "" }
                         }
                     ];
 
@@ -316,7 +363,7 @@
 
             const downloadTemplate = () => { 
                 if (!window.XLSX) return; 
-                const data = [{ "OrderDate": "2026-01-07", "PaperStatus": "Chưa duyệt", "TaskName": "Tên sự kiện mẫu...", "OverallStatus": "Chưa bắt đầu", "Unit": "Văn phòng trường", "Categories": "Thiết kế", "BrandTaskName": "Content FB", "BrandDeadline": "2026-01-10", "BrandStatus": "Đang xử lý", "OperationTaskName": "", "OperationDeadline": "", "OperationStatus": "Không", "MediaTaskName": "", "MediaDeadline": "", "MediaStatus": "Không" }];
+                const data = [{ "OrderDate": "2026-01-07", "PaperStatus": "Chưa duyệt", "TaskName": "Tên sự kiện mẫu...", "OverallStatus": "Chưa bắt đầu", "Unit": "Văn phòng trường", "Categories": "Thiết kế", "BrandTaskName": "Content FB", "BrandDeadline": "2026-01-10", "BrandStatus": "Đang xử lý", "OperationTaskName": "", "OperationDeadline": "", "OperationStatus": "Không có task", "MediaTaskName": "", "MediaDeadline": "", "MediaStatus": "Không có task" }];
                 const ws = XLSX.utils.json_to_sheet(data); 
                 const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tasks"); XLSX.writeFile(wb, "MarCom_Hub_Template_Final.xlsx"); 
             };
@@ -393,9 +440,9 @@
             }), [tasks, globalFilters, colFilters]);
 
             const chartDataOverall = useMemo(() => { const counts = {}; OVERALL_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t.overallStatus || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); }, [filteredTasks]);
-            const teamVolumeData = useMemo(() => [{ name: 'Brand', value: filteredTasks.filter(t => t.brandTask?.status !== 'Không').length }, { name: 'Operation', value: filteredTasks.filter(t => t.operationTask?.status !== 'Không').length }, { name: 'Media', value: filteredTasks.filter(t => t.mediaTask?.status !== 'Không').length }], [filteredTasks]);
+            const teamVolumeData = useMemo(() => [{ name: 'Brand', value: filteredTasks.filter(t => t.brandTask?.status !== 'Không có task').length }, { name: 'Operation', value: filteredTasks.filter(t => t.operationTask?.status !== 'Không có task').length }, { name: 'Media', value: filteredTasks.filter(t => t.mediaTask?.status !== 'Không có task').length }], [filteredTasks]);
             const teamStats = (teamKey) => { const counts = {}; TASK_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); };
-            const teamUrgent = (teamKey) => { const today = new Date(); const limit = new Date(); limit.setDate(today.getDate() + 3); return filteredTasks.filter(t => { const dStr = t[`${teamKey}Task`]?.deadline; if (!dStr) return false; const deadlineDate = new Date(dStr); return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không'; }); };
+            const teamUrgent = (teamKey) => { const today = new Date(); const limit = new Date(); limit.setDate(today.getDate() + 3); return filteredTasks.filter(t => { const dStr = t[`${teamKey}Task`]?.deadline; if (!dStr) return false; const deadlineDate = new Date(dStr); return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không có task'; }); };
 
             useEffect(() => {
                 document.documentElement.style.setProperty('--col-width-check', `${colWidths.check}px`);
@@ -412,16 +459,25 @@
                     <DeleteModal isOpen={deleteModal.open} count={deleteModal.ids.length} onCancel={() => setDeleteModal({ open: false, ids: [] })} onConfirm={confirmBulkDelete} />
                     {toast && <Toast message={toast.message} onUndo={toast.undoable ? handleUndo : undefined} onClose={() => setToast(null)} />}
                     
-                    <aside className="w-64 bg-[#0F172A] fixed h-full flex flex-col z-[100] text-white shadow-2xl">
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.8</span></h1></div>
-                        <nav className="p-4 flex-1 space-y-1">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18}/> {tab.label}</button>))}</nav>
-                        <div className="p-4 border-t border-slate-800"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu mẫu</button></div>
+                    {/* SIDEBAR COLLAPSIBLE */}
+                    <aside className={`sidebar-transition fixed h-full flex flex-col z-[100] text-white shadow-2xl bg-[#0F172A] ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'}`}>
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.9</span></h1></div>
+                        <nav className="p-4 flex-1 space-y-1 overflow-hidden whitespace-nowrap">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
+                        <div className="p-4 border-t border-slate-800 overflow-hidden whitespace-nowrap"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu</button></div>
                     </aside>
 
-                    <main className="ml-64 flex-1 p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F1F5F9]">
+                    {/* MAIN CONTENT */}
+                    <main className={`main-transition flex-1 p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F1F5F9] ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+                        {/* TOGGLE SIDEBAR BUTTON */}
+                        <div className="fixed top-4 left-4 z-[200] print:hidden">
+                            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-indigo-600 border border-slate-200 transition-all">
+                                {sidebarOpen ? <ChevronLeft size={20}/> : <Menu size={20}/>}
+                            </button>
+                        </div>
+
                         {activeTab === 'dashboard' && (
                            <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-                              <header className="flex justify-between items-end border-b border-slate-200 pb-6"><div><h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Thống kê nghiệp vụ</h2></div><button onClick={handleAiAnalysis} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"><Sparkles size={16}/> ✨ AI Phân tích</button></header>
+                              <header className="flex justify-between items-end border-b border-slate-200 pb-6 pl-10"><div><h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Thống kê nghiệp vụ</h2></div><button onClick={handleAiAnalysis} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"><Sparkles size={16}/> ✨ AI Phân tích</button></header>
                               {aiAnalysis && <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2rem] flex gap-4 animate-in slide-in-from-top duration-500"><div className="p-3 bg-white text-indigo-600 rounded-2xl h-fit"><BrainCircuit size={24}/></div><div className="flex-1 text-sm font-medium text-indigo-900 italic leading-relaxed">{aiAnalysis}</div><button onClick={() => setAiAnalysis("")} className="text-indigo-300 hover:text-indigo-600"><X size={18}/></button></div>}
                               <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm grid grid-cols-4 gap-6"><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Thời gian</label><div className="flex gap-2"><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} /><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} /></div></div><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Đơn vị yêu cầu</label><select className="w-full p-2 border rounded-xl text-xs font-bold" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}><option value="">Tất cả đơn vị</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div><div className="flex items-end"><button onClick={() => setGlobalFilters({dateStart:'', dateEnd:'', unit:'', category:''})} className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200 uppercase">Xóa bộ lọc</button></div></div>
                               <div className="grid grid-cols-4 gap-6">{[{ label: 'Tổng Ticket', val: filteredTasks.length, color: 'indigo', Icon: TableIcon }, { label: 'Hoàn thành', val: filteredTasks.filter(t => t.overallStatus === 'Hoàn thành').length, color: 'emerald', Icon: CheckCircle2 }, { label: 'Đang xử lý', val: filteredTasks.filter(t => t.overallStatus === 'Đang xử lý').length, color: 'amber', Icon: Clock }, { label: 'Chưa duyệt', val: filteredTasks.filter(t => t.paperStatus === 'Chưa duyệt').length, color: 'rose', Icon: AlertCircle }].map((kpi, i) => (<div key={i} className="bg-white p-7 rounded-[2.5rem] border border-slate-200 shadow-sm transition-all hover:shadow-lg"><div className={`w-12 h-12 flex items-center justify-center rounded-2xl mb-6 ${getColorClasses(kpi.color)}`}><kpi.Icon size={24}/></div><h4 className="text-slate-400 text-[11px] font-black uppercase mb-1 tracking-widest">{kpi.label}</h4><p className="text-4xl font-black text-slate-900">{kpi.val}</p></div>))}</div>
@@ -442,18 +498,18 @@
 
                         {activeTab === 'input' && (
                            <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom duration-500 pb-20">
-                              <header className="mb-10 flex justify-between items-center"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Khởi tạo Ticket</h2><button onClick={handleAiOptimize} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-100 transition-all"><Wand2 size={14}/> ✨ Tối ưu bằng AI</button></header>
+                              <header className="mb-10 flex justify-between items-center pl-10"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Tạo công việc</h2><button onClick={handleAiOptimize} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-100 transition-all"><Wand2 size={14}/> ✨ Tối ưu bằng AI</button></header>
                               <form onSubmit={handleAddTask} className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-xl space-y-12">
                                  <div className="space-y-8"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">I. Thông tin chung</h3><div className="grid grid-cols-2 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Tên Task (Chung) *</label><input required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" value={formData.taskName} onChange={e => setFormData({...formData, taskName: e.target.value})} placeholder="Tên chiến dịch..." /></div><div className="space-y-1"><label className="text-sm font-bold">Đơn vị yêu cầu *</label><select required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none font-bold" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})}><option value="">-- Chọn đơn vị --</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div></div><div className="grid grid-cols-3 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Ngày Order</label><input type="date" className="w-full px-5 py-4 rounded-2xl border-slate-200 bg-slate-50 text-sm outline-none" value={formData.orderDate} onChange={e => setFormData({...formData, orderDate: e.target.value})} /></div><div className="space-y-1"><label className="text-sm font-bold text-indigo-600">Hoàn thành tổng *</label><select className="w-full px-5 py-4 rounded-2xl border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-700" value={formData.overallStatus} onChange={e => setFormData({...formData, overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><div className="space-y-1"><label className="text-sm font-bold">Phân loại</label><MultiSelect options={CATEGORIES} selected={formData.categories} onChange={v => setFormData({...formData, categories: v})} /></div></div></div>
                                  <div className="space-y-8 pt-10 border-t border-slate-100"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">II. Phân công đội ngũ</h3><div className="grid grid-cols-3 gap-6">{['brand', 'operation', 'media'].map(t => (<div key={t} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4"><span className="text-[10px] font-black uppercase text-slate-400">Team {t.toUpperCase()}</span><input className="w-full p-3 text-[11px] border border-slate-200 rounded-xl font-bold bg-white" placeholder="Tên task cụ thể..." value={formData[`${t}Task`].name} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], name: e.target.value}})} /><select className="w-full p-3 text-[11px] border rounded-xl font-bold bg-white outline-none" value={formData[`${t}Task`].status} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select><input type="date" className="w-full p-3 text-[11px] border rounded-xl bg-white outline-none" value={formData[`${t}Task`].deadline} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], deadline: e.target.value}})} /></div>))}</div></div>
-                                 <button type="submit" className="w-full bg-indigo-600 text-white font-black py-7 rounded-[2.5rem] shadow-2xl hover:bg-indigo-700 transition-all text-xl uppercase tracking-tighter">Phát hành Ticket</button>
+                                 <button type="submit" className="w-full bg-indigo-600 text-white font-black py-7 rounded-[2.5rem] shadow-2xl hover:bg-indigo-700 transition-all text-xl uppercase tracking-tighter">Tạo công việc</button>
                               </form>
                            </div>
                         )}
 
                         {activeTab === 'list' && (
                            <div className="flex flex-col h-full overflow-hidden">
-                              <header className="mb-6 flex justify-between items-center"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase tracking-widest">Danh sách công việc</h2>
+                              <header className="mb-6 flex justify-between items-center pl-10"><h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase tracking-widest">Danh sách công việc</h2>
                                 <div className="flex gap-2">
                                     {selectedIds.length > 0 && (<button onClick={() => setDeleteModal({ open: true, ids: selectedIds })} className="flex items-center gap-2 px-4 py-3 bg-rose-600 text-white rounded-xl shadow-lg font-bold hover:bg-rose-700 transition-all animate-in fade-in"><Trash2 size={18}/> Xóa {selectedIds.length} mục</button>)}
                                     <button onClick={downloadTemplate} title="Tải Excel mẫu" className="p-3 bg-white border rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all"><Download size={20}/></button>
