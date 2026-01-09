@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.14 (Mock Data & Shift Select)</title>
+    <title>MarCom Dashboard Pro v12.15 (Sticky Fix & UI Clean)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -32,17 +32,38 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         
-        /* FIX: Sticky Columns Background Opaque */
-        /* Gán màu nền trắng mặc định cho cột dính để che nội dung trôi qua */
-        th.sticky-col-0, th.sticky-col-1, th.sticky-col-2, th.sticky-col-3, th.sticky-col-4 { background-color: #f8fafc; z-index: 50; }
-        td.sticky-col-0, td.sticky-col-1, td.sticky-col-2, td.sticky-col-3, td.sticky-col-4 { background-color: white; z-index: 40; }
+        /* --- STICKY & Z-INDEX MANAGEMENT (QUAN TRỌNG) --- */
         
-        /* Khi hover vào hàng, đổi màu nền cột dính để khớp với màu hover của hàng */
-        tr:hover td.sticky-col-0, tr:hover td.sticky-col-1, tr:hover td.sticky-col-2, tr:hover td.sticky-col-3, tr:hover td.sticky-col-4 { background-color: #f8fafc; }
+        /* 1. Header Cells (th) - Lớp cao nhất */
+        th.sticky-col-0, th.sticky-col-1, th.sticky-col-2, th.sticky-col-3, th.sticky-col-4 { 
+            background-color: #f8fafc; /* Màu nền header */
+            z-index: 60 !important; /* Cao nhất để đè mọi thứ */
+        }
         
-        /* Selected row color override */
-        tr.bg-indigo-50 td.sticky-col-0, tr.bg-indigo-50 td.sticky-col-1, tr.bg-indigo-50 td.sticky-col-2, tr.bg-indigo-50 td.sticky-col-3, tr.bg-indigo-50 td.sticky-col-4 { background-color: #eef2ff; }
+        /* 2. Header thường */
+        thead tr th {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: #f8fafc;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
 
+        /* 3. Body Cells Cố định (td) - Lớp giữa */
+        td.sticky-col-0, td.sticky-col-1, td.sticky-col-2, td.sticky-col-3, td.sticky-col-4 { 
+            background-color: white; 
+            z-index: 40 !important; 
+        }
+
+        /* Hover row styling for sticky cols */
+        tr:hover td.sticky-col-0, tr:hover td.sticky-col-1, tr:hover td.sticky-col-2, tr:hover td.sticky-col-3, tr:hover td.sticky-col-4 { 
+            background-color: #f8fafc; 
+        }
+        tr.bg-indigo-50 td.sticky-col-0, tr.bg-indigo-50 td.sticky-col-1, tr.bg-indigo-50 td.sticky-col-2, tr.bg-indigo-50 td.sticky-col-3, tr.bg-indigo-50 td.sticky-col-4 { 
+            background-color: #eef2ff; 
+        }
+
+        /* Positions */
         .sticky-col-0 { position: sticky; left: 0; border-right: 1px solid #cbd5e1; }
         .sticky-col-1 { position: sticky; left: var(--col-width-check, 50px); border-right: 1px solid #cbd5e1; }
         .sticky-col-2 { position: sticky; left: calc(var(--col-width-check, 50px) + var(--col-width-actions, 60px)); border-right: 1px solid #cbd5e1; }
@@ -125,18 +146,13 @@
         // --- DATA ---
         const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
         const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
-        
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
         const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Chờ duyệt", "Gấp"];
         const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
-        
-        const STATUS_COLOR_MAP = { 
-            "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", 
-            "Không": "#cbd5e1", "Không có task": "#cbd5e1", "Chờ duyệt": "#a855f7", "Gấp": "#ef4444" 
-        };
+        const STATUS_COLOR_MAP = { "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", "Không": "#cbd5e1", "Không có task": "#cbd5e1", "Chờ duyệt": "#a855f7", "Gấp": "#ef4444" };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
-        // --- COMPONENTS ---
+        // --- COMPONENT: MODAL MULTISELECT ---
         const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
             const containerRef = useRef(null);
@@ -254,11 +270,11 @@
             const [activeTab, setActiveTab] = useState('dashboard');
             const [tasks, setTasks] = useState([]);
             const [deleteModal, setDeleteModal] = useState({ open: false, ids: [] });
-            const [mockModalOpen, setMockModalOpen] = useState(false); // State for Mock Modal
+            const [mockModalOpen, setMockModalOpen] = useState(false);
             const [isAiLoading, setIsAiLoading] = useState(false);
             const [aiAnalysis, setAiAnalysis] = useState("");
             const [selectedIds, setSelectedIds] = useState([]);
-            const [lastSelectedId, setLastSelectedId] = useState(null); // Track last click for Shift Select
+            const [lastSelectedId, setLastSelectedId] = useState(null);
             const [toast, setToast] = useState(null);
             const deletedDataRef = useRef([]);
             const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -294,34 +310,21 @@
             const debouncedUpdate = useCallback(_.debounce(async (id, data) => { if(!db) return; try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks', id), data); } catch (e) { console.error(e); } }, 800), []);
             const handleUpdateTask = (id, updatedData) => { setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t)); debouncedUpdate(id, updatedData); };
 
-            // --- SHIFT CLICK SELECTION LOGIC ---
             const handleSelectRow = (e, id) => {
-                // Determine current state of this row (is it going to be selected or deselected?)
                 const isSelecting = !selectedIds.includes(id);
-                
                 if (e.shiftKey && lastSelectedId) {
                     const currentIndex = filteredTasks.findIndex(t => t.id === id);
                     const lastIndex = filteredTasks.findIndex(t => t.id === lastSelectedId);
-                    
                     if (currentIndex !== -1 && lastIndex !== -1) {
                         const start = Math.min(currentIndex, lastIndex);
                         const end = Math.max(currentIndex, lastIndex);
                         const rangeIds = filteredTasks.slice(start, end + 1).map(t => t.id);
-                        
-                        if (isSelecting) {
-                            setSelectedIds(prev => [...new Set([...prev, ...rangeIds])]);
-                        } else {
-                            // If deselecting, we remove the range
-                            setSelectedIds(prev => prev.filter(pid => !rangeIds.includes(pid)));
-                        }
+                        if (isSelecting) setSelectedIds(prev => [...new Set([...prev, ...rangeIds])]);
+                        else setSelectedIds(prev => prev.filter(pid => !rangeIds.includes(pid)));
                     }
                 } else {
-                    // Normal Click
-                    if (isSelecting) {
-                        setSelectedIds(prev => [...prev, id]);
-                    } else {
-                        setSelectedIds(prev => prev.filter(i => i !== id));
-                    }
+                    if (isSelecting) setSelectedIds(prev => [...prev, id]);
+                    else setSelectedIds(prev => prev.filter(i => i !== id));
                 }
                 setLastSelectedId(id);
             };
@@ -355,7 +358,6 @@
                 } catch (e) { alert("Lỗi hoàn tác: " + e.message); }
             };
 
-            // IMPROVED MOCK DATA GENERATOR
             const generateMockData = async (qty, type) => {
                 if(!db) return;
                 const batch = writeBatch(db);
@@ -366,9 +368,7 @@
                         internal: ["Mua sắm thiết bị", "Trang trí Tết", "Họp giao ban", "Đào tạo nhân sự", "Báo cáo quý"],
                         random: [] 
                     };
-                    // Fill random if empty
                     tasksPool.random = [...tasksPool.event, ...tasksPool.admission, ...tasksPool.internal];
-
                     const selectedPool = tasksPool[type] || tasksPool.random;
 
                     for(let i = 0; i < qty; i++) {
@@ -390,7 +390,6 @@
                             createdAt: serverTimestamp()
                         });
                     }
-
                     await batch.commit();
                     alert(`Đã khởi tạo ${qty} dòng dữ liệu mẫu (${type})!`);
                 } catch (e) { alert("Lỗi: " + e.message); }
@@ -497,7 +496,7 @@
             if (!db) return ( <div className="h-screen flex items-center justify-center bg-slate-50 p-6"><div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg"><div className="mx-auto w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4"><Database size={32}/></div><h2 className="text-2xl font-black text-slate-900 mb-2">Chưa kết nối Firebase</h2><p className="text-slate-500 mb-6">Vui lòng kiểm tra lại cấu hình Firebase.</p><a href="https://console.firebase.google.com/" target="_blank" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">Đến Firebase Console</a></div></div> );
 
             return (
-                <div className="flex font-sans h-full">
+                <div className="flex font-sans h-full flex-col">
                     {isAiLoading && (<div className="fixed inset-0 z-[20000] bg-white/60 backdrop-blur-sm flex items-center justify-center flex-col gap-4"><div className="animate-spin text-indigo-600"><RefreshCw size={48}/></div><p className="font-black text-indigo-950 uppercase tracking-widest text-sm animate-pulse">✨ Trí tuệ nhân tạo đang xử lý...</p></div>)}
                     <DeleteModal isOpen={deleteModal.open} count={deleteModal.ids.length} onCancel={() => setDeleteModal({ open: false, ids: [] })} onConfirm={confirmBulkDelete} />
                     {mockModalOpen && <MockDataModal isOpen={mockModalOpen} onClose={() => setMockModalOpen(false)} onGenerate={generateMockData} />}
@@ -505,7 +504,7 @@
                     
                     {/* SIDEBAR COLLAPSIBLE */}
                     <aside className={`sidebar-transition fixed h-full flex flex-col z-[100] text-white shadow-2xl bg-[#0F172A] ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'}`}>
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.14</span></h1></div>
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.15</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1 overflow-hidden whitespace-nowrap">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
                         <div className="p-4 border-t border-slate-800 overflow-hidden whitespace-nowrap"><button onClick={() => setMockModalOpen(true)} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu</button></div>
                     </aside>
@@ -513,7 +512,7 @@
                     {/* MAIN CONTENT */}
                     <main className={`main-transition flex-1 p-8 min-w-0 overflow-y-auto flex flex-col h-full bg-[#F1F5F9] ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
                         {/* HEADER BAR (Toggle & Global Filter) */}
-                        <div className="flex justify-between items-center mb-8 sticky top-0 bg-[#F1F5F9] z-[50] py-2">
+                        <div className="flex-none flex justify-between items-center mb-8 bg-[#F1F5F9] z-[50]">
                             <div className="flex items-center gap-4">
                                 <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-indigo-600 border border-slate-200 transition-all">
                                     {sidebarOpen ? <ChevronLeft size={20}/> : <Menu size={20}/>}
