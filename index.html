@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.9 (UX Upgrade)</title>
+    <title>MarCom Dashboard Pro v12.10 (UX Upgrade)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -68,7 +68,7 @@
         import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
         import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft } from 'lucide-react';
-        import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+        import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
         // --- CONFIG ---
         const firebaseConfig = {
@@ -116,14 +116,10 @@
 
         // --- DATA ---
         const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
-        
-        // FIX: Danh sách phân loại chuẩn theo yêu cầu
         const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
         
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
         const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện", "Chờ duyệt", "Gấp"];
-        
-        // FIX: Đổi "Không" thành "Không có task"
         const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện"];
         
         const STATUS_COLOR_MAP = { 
@@ -132,7 +128,9 @@
         };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
-        // --- IMPROVED MULTISELECT COMPONENT ---
+        // --- COMPONENTS ---
+        
+        // MultiSelect cải tiến với Backdrop (Sửa lỗi bị đóng & lỗi chìm)
         const MultiSelect = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
@@ -143,34 +141,16 @@
                 e.stopPropagation();
                 if (containerRef.current) {
                     const rect = containerRef.current.getBoundingClientRect();
-                    // Tính toán vị trí để hiện popup ngay bên dưới
+                    // Tính toán vị trí fixed
                     setCoords({ top: rect.bottom + window.scrollY, left: rect.left, width: Math.max(rect.width, 250) });
                 }
-                setIsOpen(prev => !prev);
+                setIsOpen(true);
             };
 
-            // Click outside để đóng
-            useEffect(() => {
-                const close = (e) => {
-                    // Nếu click vào popup thì không đóng
-                    if (e.target.closest('.multiselect-popup')) return;
-                    setIsOpen(false);
-                };
-                if (isOpen) {
-                    document.addEventListener("mousedown", close);
-                    window.addEventListener("scroll", close); // Đóng khi cuộn để tránh lệch
-                }
-                return () => {
-                    document.removeEventListener("mousedown", close);
-                    window.removeEventListener("scroll", close);
-                };
-            }, [isOpen]);
-
-            const toggleOption = (e, option) => { 
-                e.stopPropagation(); // Ngăn chặn sự kiện nổi bọt làm đóng popup
+            const toggleOption = (option) => { 
                 const newSelected = selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]; 
                 onChange(newSelected);
-                // KHÔNG setOpen(false) ở đây để cho phép chọn nhiều
+                // Không đóng popup ở đây để cho phép chọn nhiều
             };
             
             return (
@@ -181,19 +161,25 @@
                         </div>
                         <ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
-                    {/* Sử dụng Z-Index cực cao và Fixed positioning để nổi lên trên cùng */}
+                    
                     {isOpen && (
-                        <div className="multiselect-popup fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10 animate-in fade-in zoom-in-95 duration-100" 
-                             style={{ top: coords.top + 5, left: coords.left, width: coords.width }}>
-                            {options.map(option => (
-                                <div key={option} onClick={(e) => toggleOption(e, option)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer select-none border-b border-slate-50 last:border-0">
-                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
-                                        {selected.includes(option) && <Check size={12} className="text-white font-bold"/>}
+                        <>
+                            {/* Backdrop trong suốt để bắt sự kiện click ra ngoài */}
+                            <div className="fixed inset-0 z-[9998]" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}></div>
+                            
+                            {/* Popup nổi lên trên cùng */}
+                            <div className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10 animate-in fade-in zoom-in-95 duration-100" 
+                                 style={{ top: coords.top + 5, left: coords.left, width: coords.width }}>
+                                {options.map(option => (
+                                    <div key={option} onClick={(e) => { e.stopPropagation(); toggleOption(option); }} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer select-none border-b border-slate-50 last:border-0">
+                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
+                                            {selected.includes(option) && <Check size={12} className="text-white font-bold"/>}
+                                        </div>
+                                        <span className={`text-xs ${selected.includes(option) ? 'text-indigo-700 font-bold' : 'text-slate-700'}`}>{option}</span>
                                     </div>
-                                    <span className={`text-xs ${selected.includes(option) ? 'text-indigo-700 font-bold' : 'text-slate-700'}`}>{option}</span>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </div>
             );
@@ -242,15 +228,12 @@
             const [selectedIds, setSelectedIds] = useState([]);
             const [toast, setToast] = useState(null);
             const deletedDataRef = useRef([]);
-            
-            // Sidebar State
-            const [sidebarOpen, setSidebarOpen] = useState(true);
+            const [sidebarOpen, setSidebarOpen] = useState(true); // Trạng thái Menu
 
             const [colWidths, setColWidths] = useState({ check: 50, actions: 60, admin: 140, task: 320, overall: 160, unit: 180, brand: 350, operation: 350, media: 350 });
             const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
             const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
             
-            // Initial data for form
             const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
             const [formData, setFormData] = useState(emptyFormData);
 
@@ -444,6 +427,22 @@
             const teamStats = (teamKey) => { const counts = {}; TASK_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t[`${teamKey}Task`]?.status || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); };
             const teamUrgent = (teamKey) => { const today = new Date(); const limit = new Date(); limit.setDate(today.getDate() + 3); return filteredTasks.filter(t => { const dStr = t[`${teamKey}Task`]?.deadline; if (!dStr) return false; const deadlineDate = new Date(dStr); return deadlineDate >= today && deadlineDate <= limit && t[`${teamKey}Task`]?.status !== 'Hoàn thành' && t[`${teamKey}Task`]?.status !== 'Không có task'; }); };
 
+            // NEW: Chart for Categories (Completed vs Pending)
+            const chartDataCategory = useMemo(() => {
+                const data = CATEGORIES.map(cat => ({ name: cat, completed: 0, pending: 0 }));
+                filteredTasks.forEach(t => {
+                    const isCompleted = t.overallStatus === "Hoàn thành";
+                    t.categories.forEach(cat => {
+                        const idx = data.findIndex(d => d.name === cat);
+                        if (idx !== -1) {
+                            if (isCompleted) data[idx].completed++;
+                            else data[idx].pending++;
+                        }
+                    });
+                });
+                return data;
+            }, [filteredTasks]);
+
             useEffect(() => {
                 document.documentElement.style.setProperty('--col-width-check', `${colWidths.check}px`);
                 document.documentElement.style.setProperty('--col-width-actions', `${colWidths.actions}px`);
@@ -461,7 +460,7 @@
                     
                     {/* SIDEBAR COLLAPSIBLE */}
                     <aside className={`sidebar-transition fixed h-full flex flex-col z-[100] text-white shadow-2xl bg-[#0F172A] ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'}`}>
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.9</span></h1></div>
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.10</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1 overflow-hidden whitespace-nowrap">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
                         <div className="p-4 border-t border-slate-800 overflow-hidden whitespace-nowrap"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu</button></div>
                     </aside>
@@ -481,10 +480,15 @@
                               {aiAnalysis && <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2rem] flex gap-4 animate-in slide-in-from-top duration-500"><div className="p-3 bg-white text-indigo-600 rounded-2xl h-fit"><BrainCircuit size={24}/></div><div className="flex-1 text-sm font-medium text-indigo-900 italic leading-relaxed">{aiAnalysis}</div><button onClick={() => setAiAnalysis("")} className="text-indigo-300 hover:text-indigo-600"><X size={18}/></button></div>}
                               <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm grid grid-cols-4 gap-6"><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Thời gian</label><div className="flex gap-2"><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} /><input type="date" className="w-1/2 p-2 border rounded-xl text-xs" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} /></div></div><div className="space-y-1"><label className="text-[10px] font-black uppercase text-slate-400">Đơn vị yêu cầu</label><select className="w-full p-2 border rounded-xl text-xs font-bold" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}><option value="">Tất cả đơn vị</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div><div className="flex items-end"><button onClick={() => setGlobalFilters({dateStart:'', dateEnd:'', unit:'', category:''})} className="w-full py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200 uppercase">Xóa bộ lọc</button></div></div>
                               <div className="grid grid-cols-4 gap-6">{[{ label: 'Tổng Ticket', val: filteredTasks.length, color: 'indigo', Icon: TableIcon }, { label: 'Hoàn thành', val: filteredTasks.filter(t => t.overallStatus === 'Hoàn thành').length, color: 'emerald', Icon: CheckCircle2 }, { label: 'Đang xử lý', val: filteredTasks.filter(t => t.overallStatus === 'Đang xử lý').length, color: 'amber', Icon: Clock }, { label: 'Chưa duyệt', val: filteredTasks.filter(t => t.paperStatus === 'Chưa duyệt').length, color: 'rose', Icon: AlertCircle }].map((kpi, i) => (<div key={i} className="bg-white p-7 rounded-[2.5rem] border border-slate-200 shadow-sm transition-all hover:shadow-lg"><div className={`w-12 h-12 flex items-center justify-center rounded-2xl mb-6 ${getColorClasses(kpi.color)}`}><kpi.Icon size={24}/></div><h4 className="text-slate-400 text-[11px] font-black uppercase mb-1 tracking-widest">{kpi.label}</h4><p className="text-4xl font-black text-slate-900">{kpi.val}</p></div>))}</div>
-                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                              
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[400px]"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 text-center tracking-widest underline decoration-indigo-200">Trạng thái hoàn thành tổng</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataOverall}><XAxis dataKey="name" style={{fontSize: '9px', fontWeight: 700}} /><Tooltip /><Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>{chartDataOverall.map((s, i) => <Cell key={i} fill={STATUS_COLOR_MAP[s.name]} />)}</Bar></BarChart></ResponsiveContainer></div>
-                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[400px] lg:col-span-2 flex flex-col items-center"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 tracking-widest underline decoration-indigo-200">Phân bổ khối lượng Team</h4><ResponsiveContainer width="100%" height="80%"><BarChart data={teamVolumeData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={100} style={{fontSize: '11px', fontWeight: 800}} /><Tooltip /><Bar dataKey="value" barSize={35} radius={[0, 8, 8, 0]}>{teamVolumeData.map((e, i) => <Cell key={i} fill={TEAM_COLORS[e.name.toLowerCase()]} />)}</Bar></BarChart></ResponsiveContainer></div>
+                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[400px] flex flex-col items-center"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 tracking-widest underline decoration-indigo-200">Phân bổ khối lượng Team</h4><ResponsiveContainer width="100%" height="80%"><BarChart data={teamVolumeData} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={100} style={{fontSize: '11px', fontWeight: 800}} /><Tooltip /><Bar dataKey="value" barSize={35} radius={[0, 8, 8, 0]}>{teamVolumeData.map((e, i) => <Cell key={i} fill={TEAM_COLORS[e.name.toLowerCase()]} />)}</Bar></BarChart></ResponsiveContainer></div>
                               </div>
+
+                              {/* NEW CHART */}
+                              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 h-[450px] mt-8"><h4 className="text-xs font-black text-slate-400 uppercase mb-6 text-center tracking-widest underline decoration-indigo-200">Tiến độ theo hạng mục công việc</h4><ResponsiveContainer width="100%" height="90%"><BarChart data={chartDataCategory} margin={{top: 20, right: 30, left: 20, bottom: 5}}><XAxis dataKey="name" style={{fontSize: '10px', fontWeight: 700}} /><YAxis style={{fontSize: '10px'}} /><Tooltip /><Legend /><Bar dataKey="completed" name="Đã hoàn thành" stackId="a" fill="#10b981" barSize={50} /><Bar dataKey="pending" name="Cần hoàn thành" stackId="a" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={50} /></BarChart></ResponsiveContainer></div>
+
                               <div className="grid grid-cols-3 gap-8 border-t pt-10">
                                  {['brand', 'operation', 'media'].map(t => (
                                    <div key={t} className={`p-8 bg-white rounded-[2.5rem] border border-slate-200 h-[450px] flex flex-col ${teamUrgent(t).length > 0 ? 'border-rose-200 shadow-2xl shadow-rose-50' : ''}`}><h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6 flex justify-between"><span>Team {t.toUpperCase()} Sát Deadline</span><span className="bg-slate-100 px-2 py-0.5 rounded text-indigo-600 font-bold">{teamUrgent(t).length}</span></h4>
