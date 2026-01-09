@@ -3,16 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.12 (Modal & Filters)</title>
+    <title>MarCom Dashboard Pro v12.13 (Portal Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <script type="importmap">
@@ -46,13 +42,13 @@
         .resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 80; touch-action: none; }
         .resizer:hover { background: #6366f1; opacity: 0.5; }
         
-        .animate-in { animation-duration: 0.3s; animation-fill-mode: both; }
+        .animate-in { animation-duration: 0.2s; animation-fill-mode: both; }
         .fade-in { animation-name: fadeIn; }
-        .slide-in-from-bottom { animation-name: slideInFromBottom; }
         .zoom-in { animation-name: zoomIn; }
+        .slide-in-from-bottom { animation-name: slideInFromBottom; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes slideInFromBottom { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
         .sidebar-transition { transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; }
@@ -64,6 +60,7 @@
 
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+        import ReactDOM from 'react-dom'; // Import ReactDOM để dùng Portal
         import { createRoot } from 'react-dom/client';
         import { initializeApp } from 'firebase/app';
         import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
@@ -131,10 +128,10 @@
         };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
-        // --- COMPONENT: MODAL MULTISELECT (NEW) ---
-        // Popup giữa màn hình, dễ đọc, dễ chọn
+        // --- COMPONENT: MODAL MULTISELECT USING PORTAL (THE FIX) ---
         const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
+            const containerRef = useRef(null);
             
             const handleToggle = (option) => {
                 const newSelected = selected.includes(option) 
@@ -144,19 +141,18 @@
             };
 
             return (
-                <>
+                <div className="w-full">
                     {/* Trigger Button */}
-                    <div onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
+                    <div ref={containerRef} onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
                         <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">
                             {selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}
                         </div>
                         <ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
 
-                    {/* Modal Overlay */}
-                    {isOpen && (
+                    {/* PORTAL: Render Modal vào body thay vì trong table */}
+                    {isOpen && ReactDOM.createPortal(
                         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
-                            {/* Modal Content */}
                             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
                                 <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
                                     <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Phân loại công việc</h3>
@@ -181,9 +177,10 @@
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </div>,
+                        document.body
                     )}
-                </>
+                </div>
             );
         };
 
@@ -233,9 +230,9 @@
             const [sidebarOpen, setSidebarOpen] = useState(true);
 
             const [colWidths, setColWidths] = useState({ check: 50, actions: 60, admin: 140, task: 320, overall: 160, unit: 180, brand: 350, operation: 350, media: 350 });
-            const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
             
-            // Global Filter now at App level
+            // Filters
+            const [colFilters, setColFilters] = useState({ date: '', ticket: '', task: '', overall: '', unit: '' });
             const [globalFilters, setGlobalFilters] = useState({ dateStart: '', dateEnd: '', unit: '', category: '' });
             
             const emptyFormData = { orderDate: new Date().toISOString().split('T')[0], paperStatus: 'Chưa duyệt', taskName: '', overallStatus: 'Chưa bắt đầu', unit: '', categories: [], brandTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, operationTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' }, mediaTask: { name: '', deadline: '', status: 'Chưa bắt đầu', link: '' } };
@@ -295,7 +292,6 @@
                 } catch (e) { alert("Lỗi hoàn tác: " + e.message); }
             };
 
-            // MOCK DATA GENERATOR
             const createMockData = async () => {
                 if(!db) return;
                 const batch = writeBatch(db);
@@ -395,11 +391,10 @@
                 const dateG = (!globalFilters.dateStart || t.orderDate >= globalFilters.dateStart) && (!globalFilters.dateEnd || t.orderDate <= globalFilters.dateEnd);
                 const unitG = !globalFilters.unit || t.unit === globalFilters.unit;
                 
-                // Column Filters
                 const dateC = !colFilters.date || t.orderDate.includes(colFilters.date);
                 const nameC = !colFilters.task || t.taskName.toLowerCase().includes(colFilters.task.toLowerCase());
                 const overallC = !colFilters.overall || t.overallStatus === colFilters.overall;
-                const unitC = !colFilters.unit || t.unit.toLowerCase().includes(colFilters.unit.toLowerCase()); // Added Unit Column Filter logic
+                const unitC = !colFilters.unit || t.unit.toLowerCase().includes(colFilters.unit.toLowerCase());
 
                 return dateG && unitG && dateC && nameC && overallC && unitC;
             }), [tasks, globalFilters, colFilters]);
@@ -441,7 +436,7 @@
                     
                     {/* SIDEBAR COLLAPSIBLE */}
                     <aside className={`sidebar-transition fixed h-full flex flex-col z-[100] text-white shadow-2xl bg-[#0F172A] ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'}`}>
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.12</span></h1></div>
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.13</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1 overflow-hidden whitespace-nowrap">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
                         <div className="p-4 border-t border-slate-800 overflow-hidden whitespace-nowrap"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu</button></div>
                     </aside>
