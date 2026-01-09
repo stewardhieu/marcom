@@ -394,10 +394,14 @@
             const filteredTasks = useMemo(() => tasks.filter(t => {
                 const dateG = (!globalFilters.dateStart || t.orderDate >= globalFilters.dateStart) && (!globalFilters.dateEnd || t.orderDate <= globalFilters.dateEnd);
                 const unitG = !globalFilters.unit || t.unit === globalFilters.unit;
+                
+                // Column Filters
                 const dateC = !colFilters.date || t.orderDate.includes(colFilters.date);
                 const nameC = !colFilters.task || t.taskName.toLowerCase().includes(colFilters.task.toLowerCase());
                 const overallC = !colFilters.overall || t.overallStatus === colFilters.overall;
-                return dateG && unitG && dateC && nameC && overallC;
+                const unitC = !colFilters.unit || t.unit.toLowerCase().includes(colFilters.unit.toLowerCase()); // Added Unit Column Filter logic
+
+                return dateG && unitG && dateC && nameC && overallC && unitC;
             }), [tasks, globalFilters, colFilters]);
 
             const chartDataOverall = useMemo(() => { const counts = {}; OVERALL_STATUS.forEach(s => counts[s] = 0); filteredTasks.forEach(t => { const s = t.overallStatus || 'Chưa bắt đầu'; if (counts[s] !== undefined) counts[s]++; }); return Object.entries(counts).map(([name, value]) => ({ name, value })); }, [filteredTasks]);
