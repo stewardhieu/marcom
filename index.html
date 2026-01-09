@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarCom Dashboard Pro v12.11 (Fixed Layout & Data)</title>
+    <title>MarCom Dashboard Pro v12.12 (Modal & Filters)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -49,8 +49,10 @@
         .animate-in { animation-duration: 0.3s; animation-fill-mode: both; }
         .fade-in { animation-name: fadeIn; }
         .slide-in-from-bottom { animation-name: slideInFromBottom; }
+        .zoom-in { animation-name: zoomIn; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes slideInFromBottom { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
         .sidebar-transition { transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; }
@@ -66,7 +68,7 @@
         import { initializeApp } from 'firebase/app';
         import { getFirestore, collection, addDoc, setDoc, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar } from 'lucide-react';
+        import { LayoutDashboard, PlusCircle, Table as TableIcon, Download, Upload, Trash2, CheckCircle2, Clock, AlertCircle, X, ChevronDown, Check, Briefcase, Database, Wand2, BrainCircuit, Sparkles, RefreshCw, Undo2, GripVertical, Menu, ChevronLeft, Calendar, Filter, Building2 } from 'lucide-react';
         import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
         // --- CONFIG ---
@@ -116,78 +118,70 @@
         // --- DATA ---
         const DEPARTMENTS = [ "BM Điều dưỡng", "BM Giáo dục chính trị- Pháp luật", "BM Giáo dục thể chất", "BM Kế toán", "BM Kinh tế học", "BM Logistics và Quản lý chuỗi cung ứng", "BM Luật Kinh tế", "BM Ngôn ngữ Hàn Quốc", "BM Quản lý bệnh viện", "BM Quản trị kinh doanh- Marketing", "BM Tài chính- Ngân hàng", "BM Thương mại điện tử", "BM Tiếng Anh", "BM Tiếng Nhật", "BM Tiếng Pháp", "BM Tiếng Trung", "BM Toán", "BM Trí tuệ nhân tạo", "BM Việt Nam học", "BM Y tế công cộng", "Công Đoàn", "CTSV Tham vấn tâm lý", "Đảng ủy", "Đoàn Thanh niên - Hội sinh viên", "K. Âm nhạc ứng dụng", "K. Công nghệ thông tin", "K. Du lịch", "K. Khoa học sức khỏe", "K. Kinh tế- Quản lý", "K. Truyền thông đa phương tiện", "K. Xã hội và Nhân văn", "P. Công nghệ thông tin", "P. Công tác chính trị sinh viên", "P. Đào tạo", "P. Hợp tác quốc tế", "P. Marketing và Truyền thông", "P. Quản trị nguồn nhân lực", "P. Sau đại học và Quản lý khoa học", "P. Tài chính- Kế toán", "P. Thanh tra- Pháp chế", "P. Thí nghiệm trí tuệ nhân tạo Thăng Long", "P. Thông tin Tư liệu- Thư viện", "Tạp chí Khoa học Thăng Long", "Tices - Viện Giáo dục và nhận thức Thăng Long", "Timas - Viện Toán học và khoa học ứng dụng Thăng Long", "Toàn trường", "Trung tâm Đảm bảo chất lượng và Khảo thí", "Trung tâm E- Learning", "TTC - Trung tâm Đào tạo ngắn hạn và chuyển giao công nghệ", "Văn phòng trường", "Operation - MarCom", "Media - MarCom", "Brand - MarCom", "Bộ môn Trung", "Tiếng Anh", "Hợp tác quốc tế" ];
         const CATEGORIES = ["Thiết kế", "Duyệt thiết kế", "Trực HT", "Đưa tin", "Chụp ảnh", "Hỗ trợ tổ chức sự kiện", "Khác"];
+        
         const PAPER_STATUS = ["Đã duyệt", "Chưa duyệt", "Hiệu trưởng duyệt", "Nợ tờ trình", "N/A"];
-        const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện", "Chờ duyệt", "Gấp"];
-        const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Gác lại", "Đang thực hiện"];
-        const STATUS_COLOR_MAP = { "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", "Gác lại": "#f59e0b", "Không": "#cbd5e1", "Không có task": "#cbd5e1", "Đang thực hiện": "#3b82f6", "Chờ duyệt": "#a855f7", "Gấp": "#ef4444" };
+        
+        // FIX: Rút gọn trạng thái theo yêu cầu
+        const OVERALL_STATUS = ["Chưa bắt đầu", "Đang xử lý", "Hoàn thành", "Chờ duyệt", "Gấp"];
+        const TASK_STATUS = ["Không có task", "Chưa bắt đầu", "Đang xử lý", "Hoàn thành"];
+        
+        const STATUS_COLOR_MAP = { 
+            "Chưa bắt đầu": "#94a3b8", "Đang xử lý": "#6366f1", "Hoàn thành": "#10b981", 
+            "Không": "#cbd5e1", "Không có task": "#cbd5e1", "Chờ duyệt": "#a855f7", "Gấp": "#ef4444" 
+        };
         const TEAM_COLORS = { brand: "#8b5cf6", operation: "#f97316", media: "#0ea5e9" };
 
-        // --- COMPONENTS ---
-        
-        // MultiSelect FIXED POSITION (Giải quyết triệt để lỗi bị che khuất)
-        const MultiSelect = ({ options, selected, onChange, inline = false }) => {
+        // --- COMPONENT: MODAL MULTISELECT (NEW) ---
+        // Popup giữa màn hình, dễ đọc, dễ chọn
+        const MultiSelectModal = ({ options, selected, onChange, inline = false }) => {
             const [isOpen, setIsOpen] = useState(false);
-            const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
-            const containerRef = useRef(null);
             
-            const handleOpen = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (containerRef.current) {
-                    const rect = containerRef.current.getBoundingClientRect();
-                    // Tính toán vị trí Fixed dựa trên khung hình window
-                    setCoords({ 
-                        top: rect.bottom, 
-                        left: rect.left, 
-                        width: Math.max(rect.width, 250) 
-                    });
-                }
-                setIsOpen(true);
-            };
-
-            const toggleOption = (e, option) => { 
-                e.stopPropagation(); 
-                const newSelected = selected.includes(option) ? selected.filter(i => i !== option) : [...selected, option]; 
+            const handleToggle = (option) => {
+                const newSelected = selected.includes(option) 
+                    ? selected.filter(i => i !== option) 
+                    : [...selected, option];
                 onChange(newSelected);
             };
-            
-            // Đóng khi cuộn hoặc resize để tránh lệch vị trí
-            useEffect(() => {
-                const handleScroll = () => { if(isOpen) setIsOpen(false); };
-                window.addEventListener('scroll', handleScroll, true);
-                window.addEventListener('resize', handleScroll);
-                return () => {
-                    window.removeEventListener('scroll', handleScroll, true);
-                    window.removeEventListener('resize', handleScroll);
-                };
-            }, [isOpen]);
 
             return (
                 <>
-                    <div className="relative w-full" ref={containerRef}>
-                        <div onClick={handleOpen} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
-                            <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">
-                                {selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}
-                            </div>
-                            <ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
+                    {/* Trigger Button */}
+                    <div onClick={() => setIsOpen(true)} className={`w-full px-2 py-1.5 rounded border border-slate-300 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all ${inline ? 'text-[10px] min-h-[30px]' : 'px-5 py-4 rounded-2xl bg-slate-50'}`}>
+                        <div className="flex flex-wrap gap-1 w-[90%] overflow-hidden h-full">
+                            {selected.length === 0 ? <span className="text-slate-400 italic">-- Chọn --</span> : selected.map(item => <span key={item} className="bg-indigo-100 text-indigo-700 text-[9px] px-1.5 py-0.5 rounded font-bold border border-indigo-200 whitespace-nowrap">{item}</span>)}
                         </div>
+                        <ChevronDown size={12} className="text-slate-400 shrink-0 ml-1"/>
                     </div>
-                    {/* Render ra ngoài root, vị trí fixed */}
+
+                    {/* Modal Overlay */}
                     {isOpen && (
-                        <>
-                            <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)}></div>
-                            <div className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl py-2 overflow-y-auto max-h-60 ring-1 ring-black ring-opacity-10 animate-in fade-in zoom-in-95 duration-100" 
-                                 style={{ top: coords.top + 5, left: coords.left, width: coords.width }}>
-                                {options.map(option => (
-                                    <div key={option} onClick={(e) => toggleOption(e, option)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer select-none border-b border-slate-50 last:border-0">
-                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
-                                            {selected.includes(option) && <Check size={12} className="text-white font-bold"/>}
+                        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
+                            {/* Modal Content */}
+                            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                                    <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Phân loại công việc</h3>
+                                    <button onClick={() => setIsOpen(false)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500"><X size={20}/></button>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar p-1">
+                                    {options.map(option => (
+                                        <div key={option} onClick={() => handleToggle(option)} 
+                                             className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all ${selected.includes(option) ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold shadow-md' : 'border-slate-100 bg-white text-slate-600 hover:border-indigo-200'}`}>
+                                            <div className={`w-5 h-5 rounded flex items-center justify-center border ${selected.includes(option) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
+                                                {selected.includes(option) && <Check size={14} className="text-white"/>}
+                                            </div>
+                                            <span className="text-xs">{option}</span>
                                         </div>
-                                        <span className={`text-xs ${selected.includes(option) ? 'text-indigo-700 font-bold' : 'text-slate-700'}`}>{option}</span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+                                    <button onClick={() => setIsOpen(false)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                                        Xong ({selected.length})
+                                    </button>
+                                </div>
                             </div>
-                        </>
+                        </div>
                     )}
                 </>
             );
@@ -301,34 +295,22 @@
                 } catch (e) { alert("Lỗi hoàn tác: " + e.message); }
             };
 
-            // MOCK DATA GENERATOR (Đa dạng hóa)
+            // MOCK DATA GENERATOR
             const createMockData = async () => {
                 if(!db) return;
                 const batch = writeBatch(db);
                 try {
                     const mockScenarios = [
-                        { task: "Lễ Khai giảng K38", unit: "Toàn trường", cats: ["Hỗ trợ tổ chức sự kiện", "Chụp ảnh"], status: "Đang thực hiện" },
+                        { task: "Lễ Khai giảng K38", unit: "Toàn trường", cats: ["Hỗ trợ tổ chức sự kiện", "Chụp ảnh"], status: "Đang xử lý" },
                         { task: "Tuyển sinh Đại học 2026", unit: "P. Marketing và Truyền thông", cats: ["Thiết kế", "Đưa tin"], status: "Đang xử lý" },
                         { task: "Hội thảo AI trong Y tế", unit: "BM Trí tuệ nhân tạo", cats: ["Thiết kế", "Livestream"], status: "Chưa bắt đầu" },
                         { task: "Ngày hội việc làm Job Fair", unit: "P. Công tác chính trị sinh viên", cats: ["Hậu cần", "Quay chụp"], status: "Gấp" },
-                        { task: "Cuộc thi Rung Chuông Vàng", unit: "Đoàn Thanh niên - Hội sinh viên", cats: ["Thiết kế", "Duyệt thiết kế"], status: "Hoàn thành" },
-                        { task: "Lễ ký kết MOU với Samsung", unit: "Hợp tác quốc tế", cats: ["Chụp ảnh", "Đưa tin"], status: "Đang thực hiện" },
-                        { task: "Giải bóng đá sinh viên", unit: "BM Giáo dục thể chất", cats: ["Livestream", "Bình luận"], status: "Đang xử lý" },
-                        { task: "Thiết kế Profile Khoa CNTT", unit: "K. Công nghệ thông tin", cats: ["Thiết kế"], status: "Chờ duyệt" },
-                        { task: "Video giới thiệu ngành Ngôn ngữ Anh", unit: "BM Tiếng Anh", cats: ["Quay dựng"], status: "Chưa bắt đầu" },
-                        { task: "Triển lãm đồ án tốt nghiệp K. Kiến trúc", unit: "K. Xã hội và Nhân văn", cats: ["Hỗ trợ tổ chức sự kiện"], status: "Đang thực hiện" },
-                        { task: "Mua sắm quà tặng Tết đối tác", unit: "Văn phòng trường", cats: ["Khác"], status: "Hoàn thành" },
-                        { task: "Cập nhật Website khoa Dược", unit: "K. Khoa học sức khỏe", cats: ["Khác"], status: "Gác lại" },
-                        { task: "Chụp ảnh thẻ sinh viên K39", unit: "P. Đào tạo", cats: ["Chụp ảnh"], status: "Chưa bắt đầu" },
-                        { task: "Thiết kế Standee tuyển dụng", unit: "P. Quản trị nguồn nhân lực", cats: ["Thiết kế"], status: "Đang xử lý" },
-                        { task: "Họp báo công bố điểm chuẩn", unit: "P. Đào tạo", cats: ["Đưa tin", "Livestream"], status: "Gấp" }
+                        { task: "Cuộc thi Rung Chuông Vàng", unit: "Đoàn Thanh niên - Hội sinh viên", cats: ["Thiết kế", "Duyệt thiết kế"], status: "Hoàn thành" }
                     ];
 
                     mockScenarios.forEach((scenario, index) => {
                         const newRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'marcom_v11_tasks'));
-                        // Random date
-                        const d = new Date();
-                        d.setDate(d.getDate() + (Math.random() * 30 - 10)); // +/- days
+                        const d = new Date(); d.setDate(d.getDate() + (Math.random() * 30 - 10));
                         const dateStr = d.toISOString().split('T')[0];
 
                         batch.set(newRef, {
@@ -346,7 +328,7 @@
                     });
 
                     await batch.commit();
-                    alert("Đã tạo 15 dòng dữ liệu giả lập thành công!");
+                    alert("Đã tạo dữ liệu giả lập thành công!");
                 } catch (e) { alert("Lỗi: " + e.message); }
             };
 
@@ -455,7 +437,7 @@
                     
                     {/* SIDEBAR COLLAPSIBLE */}
                     <aside className={`sidebar-transition fixed h-full flex flex-col z-[100] text-white shadow-2xl bg-[#0F172A] ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'}`}>
-                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.11</span></h1></div>
+                        <div className="p-8 border-b border-slate-800 flex items-center gap-3 overflow-hidden whitespace-nowrap"><div className="w-9 h-9 bg-indigo-500 rounded-lg flex-shrink-0 flex items-center justify-center shadow-lg"><Briefcase size={20}/></div><h1 className="text-lg font-black tracking-tighter leading-none">MarCom<br/><span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Portal v12.12</span></h1></div>
                         <nav className="p-4 flex-1 space-y-1 overflow-hidden whitespace-nowrap">{[{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }, { id: 'input', label: 'Tạo công việc', icon: PlusCircle }, { id: 'list', label: 'Danh sách', icon: TableIcon }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><tab.icon size={18} className="flex-shrink-0"/> {tab.label}</button>))}</nav>
                         <div className="p-4 border-t border-slate-800 overflow-hidden whitespace-nowrap"><button onClick={createMockData} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[9px] font-bold rounded-lg flex items-center justify-center gap-2 transition-all"><Database size={12}/> Khởi tạo dữ liệu</button></div>
                     </aside>
@@ -471,13 +453,26 @@
                                 <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{activeTab === 'dashboard' ? 'Thống kê' : activeTab === 'list' ? 'Danh sách công việc' : 'Tạo công việc'}</h2>
                             </div>
                             
-                            {/* GLOBAL DATE FILTER */}
-                            <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2">
-                                <div className="px-3 py-2 bg-indigo-50 rounded-lg text-indigo-600"><Calendar size={16}/></div>
-                                <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} />
-                                <span className="text-slate-300">-</span>
-                                <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} />
-                                {(globalFilters.dateStart || globalFilters.dateEnd) && <button onClick={() => setGlobalFilters({...globalFilters, dateStart:'', dateEnd:''})} className="p-1 text-slate-400 hover:text-rose-500"><X size={14}/></button>}
+                            {/* GLOBAL FILTERS */}
+                            <div className="flex items-center gap-3">
+                                {/* Unit Filter */}
+                                <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2 h-10">
+                                    <div className="px-2 text-indigo-600"><Building2 size={16}/></div>
+                                    <select className="text-xs font-bold text-slate-600 outline-none bg-transparent border-none w-40" value={globalFilters.unit} onChange={e => setGlobalFilters({...globalFilters, unit: e.target.value})}>
+                                        <option value="">Tất cả đơn vị</option>
+                                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                </div>
+
+                                {/* Date Filter */}
+                                <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 gap-2 h-10">
+                                    <div className="px-2 text-indigo-600"><Calendar size={16}/></div>
+                                    <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent" value={globalFilters.dateStart} onChange={e => setGlobalFilters({...globalFilters, dateStart: e.target.value})} />
+                                    <span className="text-slate-300">-</span>
+                                    <input type="date" className="text-xs font-bold text-slate-600 outline-none bg-transparent" value={globalFilters.dateEnd} onChange={e => setGlobalFilters({...globalFilters, dateEnd: e.target.value})} />
+                                </div>
+                                
+                                {(globalFilters.dateStart || globalFilters.dateEnd || globalFilters.unit) && <button onClick={() => setGlobalFilters({dateStart:'', dateEnd:'', unit:'', category:''})} className="p-2.5 bg-rose-50 rounded-xl text-rose-500 hover:bg-rose-100 transition-colors"><X size={16}/></button>}
                             </div>
                         </div>
 
@@ -497,7 +492,7 @@
                         {activeTab === 'input' && (
                            <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom duration-500 pb-20">
                               <form onSubmit={handleAddTask} className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-xl space-y-12">
-                                 <div className="space-y-8"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">I. Thông tin chung</h3><div className="grid grid-cols-2 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Tên Task (Chung) *</label><input required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" value={formData.taskName} onChange={e => setFormData({...formData, taskName: e.target.value})} placeholder="Tên chiến dịch..." /></div><div className="space-y-1"><label className="text-sm font-bold">Đơn vị yêu cầu *</label><select required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none font-bold" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})}><option value="">-- Chọn đơn vị --</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div></div><div className="grid grid-cols-3 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Ngày Order</label><input type="date" className="w-full px-5 py-4 rounded-2xl border-slate-200 bg-slate-50 text-sm outline-none" value={formData.orderDate} onChange={e => setFormData({...formData, orderDate: e.target.value})} /></div><div className="space-y-1"><label className="text-sm font-bold text-indigo-600">Hoàn thành tổng *</label><select className="w-full px-5 py-4 rounded-2xl border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-700" value={formData.overallStatus} onChange={e => setFormData({...formData, overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><div className="space-y-1"><label className="text-sm font-bold">Phân loại</label><MultiSelect options={CATEGORIES} selected={formData.categories} onChange={v => setFormData({...formData, categories: v})} /></div></div></div>
+                                 <div className="space-y-8"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">I. Thông tin chung</h3><div className="grid grid-cols-2 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Tên Task (Chung) *</label><input required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" value={formData.taskName} onChange={e => setFormData({...formData, taskName: e.target.value})} placeholder="Tên chiến dịch..." /></div><div className="space-y-1"><label className="text-sm font-bold">Đơn vị yêu cầu *</label><select required className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none font-bold" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})}><option value="">-- Chọn đơn vị --</option>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></div></div><div className="grid grid-cols-3 gap-8"><div className="space-y-1"><label className="text-sm font-bold">Ngày Order</label><input type="date" className="w-full px-5 py-4 rounded-2xl border-slate-200 bg-slate-50 text-sm outline-none" value={formData.orderDate} onChange={e => setFormData({...formData, orderDate: e.target.value})} /></div><div className="space-y-1"><label className="text-sm font-bold text-indigo-600">Hoàn thành tổng *</label><select className="w-full px-5 py-4 rounded-2xl border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-700" value={formData.overallStatus} onChange={e => setFormData({...formData, overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><div className="space-y-1"><label className="text-sm font-bold">Phân loại</label><MultiSelectModal options={CATEGORIES} selected={formData.categories} onChange={v => setFormData({...formData, categories: v})} /></div></div></div>
                                  <div className="space-y-8 pt-10 border-t border-slate-100"><h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2">II. Phân công đội ngũ</h3><div className="grid grid-cols-3 gap-6">{['brand', 'operation', 'media'].map(t => (<div key={t} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4"><span className="text-[10px] font-black uppercase text-slate-400">Team {t.toUpperCase()}</span><input className="w-full p-3 text-[11px] border border-slate-200 rounded-xl font-bold bg-white" placeholder="Tên task cụ thể..." value={formData[`${t}Task`].name} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], name: e.target.value}})} /><select className="w-full p-3 text-[11px] border rounded-xl font-bold bg-white outline-none" value={formData[`${t}Task`].status} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select><input type="date" className="w-full p-3 text-[11px] border rounded-xl bg-white outline-none" value={formData[`${t}Task`].deadline} onChange={e => setFormData({...formData, [`${t}Task`]: {...formData[`${t}Task`], deadline: e.target.value}})} /></div>))}</div></div>
                                  <button type="submit" className="w-full bg-indigo-600 text-white font-black py-7 rounded-[2.5rem] shadow-2xl hover:bg-indigo-700 transition-all text-xl uppercase tracking-tighter">Tạo công việc</button>
                               </form>
@@ -531,10 +526,10 @@
                                           <tr className="bg-white border-b divide-x divide-slate-100">
                                             <th className="sticky-col-0"></th>
                                             <th className="sticky-col-1"></th>
-                                            <th className="p-2 sticky-col-2"><input className="w-full p-1.5 text-[9px] border border-slate-200 rounded bg-slate-50 outline-none" placeholder="Lọc ngày..." value={colFilters.date} onChange={e => setColFilters({...colFilters, date: e.target.value})}/></th>
-                                            <th className="p-2 sticky-col-3"><input className="w-full p-1.5 text-[9px] border border-slate-200 rounded bg-slate-50 outline-none" placeholder="Lọc task..." value={colFilters.task} onChange={e => setColFilters({...colFilters, task: e.target.value})}/></th>
-                                            <th className="p-2 sticky-col-4 bg-indigo-50/50"><select className="w-full p-1.5 text-[9px] border border-slate-200 rounded bg-slate-50 outline-none font-bold" value={colFilters.overall} onChange={e => setColFilters({...colFilters, overall: e.target.value})}><option value="">Tất cả</option>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></th>
-                                            <th className="p-2"><input className="w-full p-1.5 text-[9px] border border-slate-200 rounded bg-slate-50 outline-none font-bold" placeholder="Lọc đơn vị..." value={colFilters.unit} onChange={e => setColFilters({...colFilters, unit: e.target.value})}/></th>
+                                            <th className="p-2 sticky-col-2"><input className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="Lọc ngày..." value={colFilters.date} onChange={e => setColFilters({...colFilters, date: e.target.value})}/></th>
+                                            <th className="p-2 sticky-col-3"><input className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="Lọc task..." value={colFilters.task} onChange={e => setColFilters({...colFilters, task: e.target.value})}/></th>
+                                            <th className="p-2 sticky-col-4 bg-indigo-50/50"><select className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-slate-50 outline-none font-bold" value={colFilters.overall} onChange={e => setColFilters({...colFilters, overall: e.target.value})}><option value="">Tất cả</option>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></th>
+                                            <th className="p-2"><input className="w-full p-2 text-[10px] border border-slate-200 rounded-lg bg-slate-50 outline-none font-bold" placeholder="Lọc đơn vị..." value={colFilters.unit} onChange={e => setColFilters({...colFilters, unit: e.target.value})}/></th>
                                             <th colSpan="3"></th>
                                           </tr>
                                        </thead>
@@ -544,7 +539,7 @@
                                                 <td className="px-4 py-4 sticky-col-0 text-center z-20"><input type="checkbox" checked={selectedIds.includes(task.id)} onChange={() => handleSelectRow(task.id)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></td>
                                                 <td className="px-4 py-4 sticky-col-1 text-center z-20"><button onClick={() => setDeleteModal({ open: true, ids: [task.id] })} className="p-2 text-slate-300 hover:text-rose-600 transition-all rounded-lg hover:bg-rose-50"><Trash2 size={16}/></button></td>
                                                 <td className="px-6 py-4 sticky-col-2 z-20 text-[10px]"><input type="date" className="w-full border-none bg-transparent font-bold p-0 mb-1 focus:ring-0 outline-none" value={task.orderDate} onChange={e => handleUpdateTask(task.id, {orderDate: e.target.value})} /><select className={`text-[9px] w-full border-none p-0 focus:ring-0 font-black uppercase outline-none ${task.paperStatus === 'Hiệu trưởng duyệt' ? 'text-indigo-600' : task.paperStatus === 'Đã duyệt' ? 'text-emerald-600' : 'text-rose-500'}`} value={task.paperStatus} onChange={e => handleUpdateTask(task.id, {paperStatus: e.target.value})}>{PAPER_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
-                                                <td className="px-6 py-4 sticky-col-3 z-20 !overflow-visible"><input className="text-xs w-full border-none bg-transparent font-black text-slate-900 p-0 mb-1 focus:ring-0 truncate outline-none" value={task.taskName} onChange={e => handleUpdateTask(task.id, {taskName: e.target.value})} /><MultiSelect inline options={CATEGORIES} selected={task.categories} onChange={v => handleUpdateTask(task.id, {categories: v})} /></td>
+                                                <td className="px-6 py-4 sticky-col-3 z-20 !overflow-visible"><input className="text-xs w-full border-none bg-transparent font-black text-slate-900 p-0 mb-1 focus:ring-0 truncate outline-none" value={task.taskName} onChange={e => handleUpdateTask(task.id, {taskName: e.target.value})} /><MultiSelectModal inline options={CATEGORIES} selected={task.categories} onChange={v => handleUpdateTask(task.id, {categories: v})} /></td>
                                                 <td className="px-6 py-4 sticky-col-4 z-20 bg-indigo-50/30 text-center"><select className={`text-[10px] w-full border-none bg-transparent p-0 focus:ring-0 font-black uppercase text-center outline-none`} style={{ color: STATUS_COLOR_MAP[task.overallStatus] }} value={task.overallStatus} onChange={e => handleUpdateTask(task.id, {overallStatus: e.target.value})}>{OVERALL_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></td>
                                                 <td className="px-6 py-4"><select className="text-[10px] w-full border-none bg-transparent p-0 font-bold text-slate-600 focus:ring-0 outline-none" value={task.unit} onChange={e => handleUpdateTask(task.id, {unit: e.target.value})}>{DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}</select></td>
                                                 {['brand', 'operation', 'media'].map(t => (<td key={t} className={`px-6 py-4 ${t === 'brand' ? 'bg-purple-50' : t === 'operation' ? 'bg-orange-50' : 'bg-sky-50'}`}><div className="flex flex-col gap-1.5"><input className="text-[11px] w-full border-none bg-transparent p-0 focus:ring-0 font-black text-slate-700 outline-none" value={task[`${t}Task`].name} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], name: e.target.value}})} /><div className="flex gap-2"><input type="date" className="text-[9px] border-none bg-transparent p-0 font-black w-1/2 outline-none" value={task[`${t}Task`].deadline} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], deadline: e.target.value}})} /><select className={`text-[9px] border-none bg-transparent p-0 font-black w-1/2 outline-none ${task[`${t}Task`].status === 'Hoàn thành' ? 'text-emerald-600' : 'text-slate-400'}`} value={task[`${t}Task`].status} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], status: e.target.value}})}>{TASK_STATUS.map(s => <option key={s} value={s}>{s}</option>)}</select></div><input className="text-[8px] border-none bg-transparent p-0 text-indigo-500 font-bold outline-none italic" value={task[`${t}Task`].link} onChange={e => handleUpdateTask(task.id, {[`${t}Task`]: {...task[`${t}Task`], link: e.target.value}})} placeholder="Link trả..." /></div></td>))}
